@@ -208,7 +208,7 @@ class DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER(bpy.types.Operator):
             m.normalize_thickness = True
         filter_source = get_filter_source()
         vg_name = filter_source + m.name
-        gp.vertex_groups.new(name=vg_name)
+        vg_name = gp.vertex_groups.new(name=vg_name).name
         m.vertex_group = vg_name
         ob = context.active_object
         if ob.vertex_groups.find(m.name) == -1:
