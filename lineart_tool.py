@@ -361,7 +361,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             col.prop(line_art_modifier, 'source_object')
             
         col.separator()
-        col.prop(line_art_modifier, 'source_vertex_group', text="Filter Source")
+        #col.prop(line_art_modifier, 'source_vertex_group', text="Filter Source")
 
         # Edge type
         col.separator()
