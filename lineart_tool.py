@@ -304,9 +304,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         self.layout.use_property_split = True
         col = self.layout.column(align=True)
         col.operator('dskjal.linearttoolautosetup', text='Add Line Art Grease Pencil')
-        col.separator()
-        col.separator()
-        col.separator()
+        col.separator(factor=3)
         # camera
         col.label(text='Camera')
         row = col.row(align=True)
@@ -355,7 +353,6 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         # Edge type
         col.separator()
-        col.separator()
         col.label(text='Edge Types')
         row = col.row(align=True)
         row.use_property_split = False
@@ -400,7 +397,6 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
             # thickness
             col.separator()
-            col.separator()
             col.label(text='Thickness')
             if thick is not None:
                 col.prop(line_art_modifier, 'thickness', text='Base Thickness')
@@ -441,9 +437,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                     ot = row.operator('dskjal.linearttooltint', text='Remove')
                     ot.tint_name = tint.name
                     ot.type = 'REMOVE'
-                    col.separator()
-                    col.separator()
-                    col.separator()
+                    col.separator(factor=3)
                     
                 col.separator()
                 col.operator('dskjal.linearttooladdtint', text="Add Color")
