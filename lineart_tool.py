@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 3),
+    "version" : (1, 4),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -323,9 +323,9 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             row.prop(lineart_modifier, 'show_render', text='')
             row.separator()
             row.label(text='Line Art')
-
         else:
             col.label(text='Line Art')
+
         grease_pencil = None
         line_art_modifier = None
         col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='GP Object')
@@ -361,8 +361,18 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         row = col.row(align=True)
         row.use_property_split = False
 
-        row.prop(line_art_modifier, 'use_edge_mark', text='Edge Marks', toggle=1)
         row.prop(line_art_modifier, 'use_intersection', text='Intersections', toggle=1)
+
+        col.separator()
+        col.use_property_split = False
+        col.prop(line_art_modifier, 'use_edge_mark', text='Edge Marks', toggle=1)
+        ob = context.active_object
+        if ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT':
+            row = col.row(align=True)
+            row.use_property_split = False
+            ot = row.operator('mesh.mark_freestyle_edge', text="Mark")
+            ot = row.operator('mesh.mark_freestyle_edge', text='Clear')
+            ot.clear = True
 
         col.separator()
         col.use_property_split = False
@@ -377,7 +387,6 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             thick = get_gp_modifier(gp=grease_pencil, name=thickness_modifier_name, type='GP_THICK')
             opacity = get_gp_modifier(gp=grease_pencil, name=opacity_modifier_name, type='GP_OPACITY')
             
-        ob = context.active_object
         if ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT':
             # Edit mode
             # opacity
@@ -467,11 +476,11 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             #             if space.type == 'VIEW_3D':
             #                 space.shading.type = 'MATERIAL'
 
-            tints = get_gp_tint_modifiers()
             # base color
             col.prop(grease_pencil.data.materials[base_color_name].grease_pencil, 'color', text='Base Color')
             col.separator()
 
+            tints = get_gp_tint_modifiers()
             for tint in tints:
                 row = col.row(align=True)
                 row.use_property_split = False
