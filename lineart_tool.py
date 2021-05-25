@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 1),
+    "version" : (1, 2),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -375,6 +375,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             col.separator()
             col.label(text='Opacity')
             if opacity is not None:
+                col.prop(line_art_modifier, 'opacity', text='Base Opacity')
                 col.prop(opacity, 'factor', text='Factor', slider=True)
                 col.separator()
                 col.prop(my_props, 'opacity_weight', text='Weight', slider=True)
@@ -440,6 +441,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             # opacity
             col.label(text='Opacity')
             if opacity is not None:
+                col.prop(line_art_modifier, 'opacity', text='Base Opacity')
                 col.prop(opacity, 'factor', text='Factor', slider=True)
 
             # thickness
