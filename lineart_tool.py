@@ -406,10 +406,8 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             ot.modifier_name = tint.name
             ot.type = 'DELETE'
             row.prop(tint, 'color', text='')
-            col.use_property_split = False
-            col.prop(tint, 'factor', slider=True)
+            row.prop(tint, 'factor', slider=True)
             if is_edit_mode:
-                col.separator()
                 row = col.row(align=True)
                 ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
                 ot.modifier_name = tint.name
