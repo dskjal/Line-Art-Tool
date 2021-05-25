@@ -443,6 +443,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         #                 space.shading.type = 'MATERIAL'
 
         # base color
+        col.use_property_split = True
         col.prop(line_art_modifier, 'target_material', text='Base Color Material')
         if line_art_modifier.target_material is not None:
             col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
