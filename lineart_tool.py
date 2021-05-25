@@ -331,40 +331,46 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.separator()
 
         col.use_property_split = True
-        # Object mode
+
+        def print_modifier(modifier, modifier_name):
+            modifiers = get_gp_modifiers(modifier=modifier)
+            for m in modifiers:
+                row = col.row(align=True)
+                row.use_property_split = False
+                ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
+                ot.modifier_name = m.name
+                ot.type = 'DELETE'
+                row.prop(m, 'name', text='')
+                if modifier == 'GP_OPACITY':
+                    row.prop(m, 'factor', text='')
+                elif modifier == 'GP_THICK':
+                    row.prop(m, 'thickness', text='')
+
+                if is_edit_mode:
+                    row = col.row(align=True)
+                    ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                    ot.modifier_name = m.name
+                    ot.type = 'ADD'
+                    ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
+                    ot.modifier_name = m.name
+                    ot.type = 'REMOVE'
+                    col.separator(factor=2)
+                row = col.row(align=True)
+                col.separator()
+
+            if is_edit_mode:
+                col.separator()
+                ot = col.operator('dskjal.linearttooladdmodifier', text="Add Opacity")                
+                ot.modifier_type = modifier
+                ot.modifier_name = modifier_name
+
         # opacity
         col.separator()
         col.label(text='Opacity')
         # base
         col.prop(line_art_modifier, 'opacity', text='Base Opacity')
         col.separator()
-        # opacity
-        opacities = get_gp_modifiers(modifier='GP_OPACITY')
-        for opacity in opacities:
-            row = col.row(align=True)
-            row.use_property_split = False
-            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
-            ot.modifier_name = opacity.name
-            ot.type = 'DELETE'
-            row.prop(opacity, 'name', text='')
-            row.prop(opacity, 'factor', text='')
-            if is_edit_mode:
-                row = col.row(align=True)
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
-                ot.modifier_name = opacity.name
-                ot.type = 'ADD'
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
-                ot.modifier_name = opacity.name
-                ot.type = 'REMOVE'
-                col.separator(factor=2)
-            row = col.row(align=True)
-            col.separator()
-
-        if is_edit_mode:
-            col.separator()
-            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Opacity")                
-            ot.modifier_type = 'GP_OPACITY'
-            ot.modifier_name = opacity_modifier_name
+        print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name)
 
         # thickness
         col.separator()
@@ -372,33 +378,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         # base
         col.prop(line_art_modifier, 'thickness', text='Base Thickness')
         col.separator()
-        # thickness
-        thicks = get_gp_modifiers(modifier='GP_THICK')
-        for thick in thicks:
-            row = col.row(align=True)
-            row.use_property_split = False
-            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
-            ot.modifier_name = thick.name
-            ot.type = 'DELETE'
-            row.prop(thick, 'name', text='')
-            row.prop(thick, 'thickness', text='')
-            if is_edit_mode:
-                row = col.row(align=True)
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
-                ot.modifier_name = thick.name
-                ot.type = 'ADD'
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
-                ot.modifier_name = thick.name
-                ot.type = 'REMOVE'
-                col.separator(factor=2)
-            row = col.row(align=True)
-            col.separator()
-
-        if is_edit_mode:
-            col.separator()
-            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Thickness")                
-            ot.modifier_type = 'GP_THICK'
-            ot.modifier_name = thickness_modifier_name
+        print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name)
 
         # color
         col.separator()
@@ -461,7 +441,6 @@ classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
     DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK,
     DSKJAL_OT_LINEART_TOOL_FREE_CAMERA,
-    DSKJAL_OT_LINEART_TOOL_OPACITY,
     DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER,
     DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER,
     DSKJAL_PT_LINEART_TOOL_UI,
