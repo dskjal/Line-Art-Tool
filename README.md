@@ -24,3 +24,7 @@ Add color with Add Color, then assign vertices.
 # 色がつかない場合 Color is not working
 ３Ｄビューのシェーディングをマテリアルプレビューかレンダーにする。  
 Switch viewport shading to material preview or render.
+
+# 交差線に色がつかない The intersection line is not colored
+Vertex Weight Transfer の仕様で交差線に色はつけられません。  
+The intersection line can not color. This is a Vertex Weight Transfer limitation.
