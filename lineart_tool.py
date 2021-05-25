@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 5),
+    "version" : (1, 6),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -379,7 +379,8 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.use_property_split = False
         col.prop(line_art_modifier, 'use_edge_mark', text='Edge Marks', toggle=1)
         ob = context.active_object
-        if ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT':
+        is_edit_mode = ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT'
+        if is_edit_mode:
             row = col.row(align=True)
             row.use_property_split = False
             ot = row.operator('mesh.mark_freestyle_edge', text="Mark")
@@ -395,33 +396,34 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         thick = None
         opacity = None
-        if grease_pencil is not None:
-            thick = get_gp_modifier(gp=grease_pencil, name=thickness_modifier_name, type='GP_THICK')
-            opacity = get_gp_modifier(gp=grease_pencil, name=opacity_modifier_name, type='GP_OPACITY')
-            
-        if ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT':
-            # Edit mode
-            # opacity
-            col.separator()
-            col.label(text='Opacity')
-            if opacity is not None:
-                col.prop(line_art_modifier, 'opacity', text='Base Opacity')
-                col.prop(opacity, 'factor', text='Factor', slider=True)
+        thick = get_gp_modifier(gp=grease_pencil, name=thickness_modifier_name, type='GP_THICK')
+        opacity = get_gp_modifier(gp=grease_pencil, name=opacity_modifier_name, type='GP_OPACITY')
+        
+        col.use_property_split = True
+        # Object mode
+        # opacity
+        col.label(text='Opacity')
+        if opacity is not None:
+            col.prop(line_art_modifier, 'opacity', text='Base Opacity')
+            col.prop(opacity, 'factor', text='Factor', slider=True)
+            if is_edit_mode:
                 col.separator()
+                col.use_property_split = False
                 col.prop(my_props, 'opacity_weight', text='Weight', slider=True)
                 row = col.row(align=True)
                 opacity_ot = row.operator('dskjal.linearttoolopacity', text='Assign')
                 opacity_ot.type = 'ADD'
                 opacity_ot.weight = my_props.opacity_weight
                 opacity_ot = row.operator('dskjal.linearttoolopacity', text='Remove')
-                opacity_ot.type = 'REMOVE'
+                opacity_ot.type = 'REMOVE'                    
 
-            # thickness
-            col.separator()
-            col.label(text='Thickness')
-            if thick is not None:
-                col.prop(line_art_modifier, 'thickness', text='Base Thickness')
-                col.prop(thick, 'thickness', text='Thickness')
+        # thickness
+        col.separator()
+        col.label(text='Thickness')
+        if thick is not None:
+            col.prop(line_art_modifier, 'thickness', text='Base Thickness')
+            col.prop(thick, 'thickness', text='Thickness')
+            if is_edit_mode:
                 col.separator()
                 col.prop(my_props, 'thickness_weight', text='Weight', slider=True)
                 row = col.row(align=True)
@@ -430,84 +432,49 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 thick_ot = row.operator('dskjal.linearttoolthickness', text='Remove')
                 thick_ot.weight = 0
 
-            # color
-            col.separator()
-            col.use_property_split = True
-            col.label(text='Color')
-            if grease_pencil is not None:
-                # base color
-                col.prop(line_art_modifier, 'target_material', text='Base Color Material')
-                if line_art_modifier.target_material is not None:
-                    col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
+        # color
+        col.separator()
+        col.label(text='Color')
+        # enable color
+        # if my_props.enable_color:
+        #     for area in context.workspace.screens[0].areas:
+        #         for space in area.spaces:
+        #             if space.type == 'VIEW_3D':
+        #                 space.shading.type = 'MATERIAL'
+
+        # base color
+        col.prop(line_art_modifier, 'target_material', text='Base Color Material')
+        if line_art_modifier.target_material is not None:
+            col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
+        col.separator()
+
+        # colors
+        tints = get_gp_tint_modifiers()
+        for tint in tints:
+            row = col.row(align=True)
+            row.use_property_split = False
+            ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
+            ot.tint_name = tint.name
+            ot.type = 'DELETE'
+            row.prop(tint, 'color', text='')
+            col.use_property_split = False
+            col.prop(tint, 'factor', slider=True)
+            if is_edit_mode:
                 col.separator()
-                
-                tints = get_gp_tint_modifiers()
-                for tint in tints:
-                    row = col.row(align=True)
-                    row.use_property_split = False
-                    ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
-                    ot.tint_name = tint.name
-                    ot.type = 'DELETE'
-                    row.prop(tint, 'color', text='')
-                    col.use_property_split = False
-                    col.prop(tint, 'factor', slider=True)
-
-                    col.separator()
-                    row = col.row(align=True)
-                    ot = row.operator('dskjal.linearttooltint', text='Assign')
-                    ot.tint_name = tint.name
-                    ot.type = 'ADD'
-                    ot = row.operator('dskjal.linearttooltint', text='Remove')
-                    ot.tint_name = tint.name
-                    ot.type = 'REMOVE'
-                    col.separator(factor=3)
-                    
-                col.separator()
-                col.operator('dskjal.linearttooladdtint', text="Add Color")
-        else:
-            col.use_property_split = True
-            # Object mode
-            # opacity
-            col.label(text='Opacity')
-            if opacity is not None:
-                col.prop(line_art_modifier, 'opacity', text='Base Opacity')
-                col.prop(opacity, 'factor', text='Factor', slider=True)
-
-            # thickness
-            col.separator()
-            col.label(text='Thickness')
-            if thick is not None:
-                col.prop(line_art_modifier, 'thickness', text='Base Thickness')
-                col.prop(thick, 'thickness', text='Thickness')
-
-            # color
-            col.separator()
-            col.label(text='Color')
-            # enable color
-            # if my_props.enable_color:
-            #     for area in context.workspace.screens[0].areas:
-            #         for space in area.spaces:
-            #             if space.type == 'VIEW_3D':
-            #                 space.shading.type = 'MATERIAL'
-
-            # base color
-            col.prop(line_art_modifier, 'target_material', text='Base Color Material')
-            if line_art_modifier.target_material is not None:
-                col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
-            col.separator()
-
-            tints = get_gp_tint_modifiers()
-            for tint in tints:
                 row = col.row(align=True)
-                row.use_property_split = False
-                ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
+                ot = row.operator('dskjal.linearttooltint', text='Assign')
                 ot.tint_name = tint.name
-                ot.type = 'DELETE'
-                row.prop(tint, 'color', text='')
-                col.use_property_split = False
-                col.prop(tint, 'factor', slider=True)
-                row = col.row(align=True)
-                col.separator()
+                ot.type = 'ADD'
+                ot = row.operator('dskjal.linearttooltint', text='Remove')
+                ot.tint_name = tint.name
+                ot.type = 'REMOVE'
+                col.separator(factor=3)
+            row = col.row(align=True)
+            col.separator()
+
+        if is_edit_mode:
+            col.separator()
+            col.operator('dskjal.linearttooladdtint', text="Add Color")                
 
 
 def gp_object_poll(self, object):
