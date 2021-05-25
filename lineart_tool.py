@@ -130,11 +130,11 @@ def get_lineart_vertex_group(ob, vertex_group_name):
         return ob.vertex_groups[id]
     
 def get_gp_modifier(gp, name, type):
-    for m in gp.grease_pencil_modifiers:
-        if m.name == name:
-            return m
-    
-    return gp.grease_pencil_modifiers.new(name=name, type=type)
+    id = gp.grease_pencil_modifiers.find(name)
+    if id == -1:
+        return gp.grease_pencil_modifiers.new(name=name, type=type)
+
+    return gp.grease_pencil_modifiers[id]
 
 def get_thickness_modifier():
     gp = get_lineart_gpencil()
