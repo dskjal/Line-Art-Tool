@@ -21,5 +21,5 @@ Line art needs to be viewed from a camera. Lock button switches to camera view a
 Switch viewport shading to material preview or render.
 
 # 交差線に色がつかない The intersection line is not colored
-Vertex Weight Transfer の仕様で交差線に色はつけられません。  
+Vertex Weight Transfer の仕様で交差線に色がつかない。  
 The intersection line can not color. This is a Vertex Weight Transfer limitation.
