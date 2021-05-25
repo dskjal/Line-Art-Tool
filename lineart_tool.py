@@ -412,10 +412,12 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 tints = get_gp_tint_modifiers()
                 for tint in tints:
                     row = col.row(align=True)
+                    row.use_property_split = False
                     ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
                     ot.tint_name = tint.name
                     ot.type = 'DELETE'
                     row.prop(tint, 'color', text='')
+                    col.use_property_split = False
                     col.prop(tint, 'factor', slider=True)
 
                     col.separator()
@@ -464,10 +466,12 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
             for tint in tints:
                 row = col.row(align=True)
+                row.use_property_split = False
                 ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
                 ot.tint_name = tint.name
                 ot.type = 'DELETE'
                 row.prop(tint, 'color', text='')
+                col.use_property_split = False
                 col.prop(tint, 'factor', slider=True)
                 row = col.row(align=True)
                 col.separator()
