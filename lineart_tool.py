@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 6),
+    "version" : (2, 0),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -35,10 +35,10 @@ bl_info = {
 default_filter_source = 'lineart_'
 opacity_vertex_group_suffix = '_opacity'
 thickness_vertex_group_suffix = '_thickness'
-opacity_modifier_name = 'lineart_tool_hide'
-thickness_modifier_name = 'lineart_tool_thickness'
-tint_modifier_name = 'lineart_tool_tint'
-base_color_name = 'lineart_tool_base_color'
+opacity_modifier_name = 'lt_opacity'
+thickness_modifier_name = 'lt_thickness'
+tint_modifier_name = 'lt_tint'
+base_color_name = 'lt_base_color'
 
 def get_filter_source():
     gp = get_lineart_gpencil(is_create=False)
@@ -102,51 +102,26 @@ def get_lineart_gpencil(is_create=True):
     
     return None
 
-def get_lineart_modifier():
-    gp = get_lineart_gpencil()
-    return gp.grease_pencil_modifiers[bpy.context.scene.lineart_tool_props.lineart_modifier]
-
 def create_lineart_vertex_group(ob, filter_source):
-    hide_name = filter_source + opacity_vertex_group_suffix
-    if ob.vertex_groups.find(hide_name) == -1:
-        ob.vertex_groups.new(name=hide_name)
-    thick_name = filter_source + thickness_vertex_group_suffix
-    if ob.vertex_groups.find(thick_name) == -1:
-        ob.vertex_groups.new(name=thick_name)
-
-    # grease penciil
     vgs = [vg.name for vg in ob.vertex_groups if vg.name.startswith(filter_source)]
     gp = get_lineart_gpencil()
     for vg in vgs:
         if gp.vertex_groups.find(vg) == -1:
             gp.vertex_groups.new(name=vg)
 
-
-def get_lineart_vertex_group(ob, vertex_group_name):
+def get_vertex_group(ob, vertex_group_name):
     id = ob.vertex_groups.find(vertex_group_name)
     if id == -1:
         return ob.vertex_groups.new(name=vertex_group_name)
     else:
         return ob.vertex_groups[id]
     
-def get_gp_modifier(gp, name, type):
-    id = gp.grease_pencil_modifiers.find(name)
-    if id == -1:
-        return gp.grease_pencil_modifiers.new(name=name, type=type)
-
-    return gp.grease_pencil_modifiers[id]
-
-def get_thickness_modifier():
+# modifier={'GP_OPACITY', 'GP_THICK', 'GP_TINT'}
+def get_gp_modifiers(modifier):
     gp = get_lineart_gpencil()
-    return get_gp_modifier(gp, thickness_modifier_name, type='GP_THICK')
-    
-def get_gp_tint_modifiers():
-    gp = get_lineart_gpencil()
-    return [m for m in gp.grease_pencil_modifiers if m.name.startswith(tint_modifier_name)]
+    return [m for m in gp.grease_pencil_modifiers if m.type == modifier]
 
-# modifier={'OPACITY', 'THICK', 'TINT'}
-# type={'ADD', 'REMOVE'}
-def edit_vertex_group(modifier, type, weight=1, tint_name=''):
+def edit_vertex_group(modifier, type, weight=1):
     ob = bpy.context.active_object
     bpy.ops.object.mode_set(mode='OBJECT')
 
@@ -155,41 +130,17 @@ def edit_vertex_group(modifier, type, weight=1, tint_name=''):
         bpy.ops.object.mode_set(mode='EDIT')
         return
     
-    filter_source = get_filter_source()
-    if modifier == 'OPACITY':
-        edit_vertex_group_name = filter_source + opacity_vertex_group_suffix
-    elif modifier == 'THICK':
-        edit_vertex_group_name = filter_source + thickness_vertex_group_suffix
-    elif modifier == 'TINT':
-        edit_vertex_group_name = filter_source + tint_name
-
-    create_lineart_vertex_group(ob, filter_source)
-    vg = get_lineart_vertex_group(ob, edit_vertex_group_name)
+    vg_name = modifier.vertex_group
+    if vg_name == None:
+        raise Exception('modifier ' + modifier.name + ' has no vertex_group.')
+    
+    vg = get_vertex_group(ob, vg_name)
     if type == 'ADD':
         vg.add(selected_verts, weight, 'REPLACE')
     elif type == 'REMOVE':
         vg.remove(selected_verts)
     else:
         raise Exception('edit_vertex_group(): wrong type')
-
-    # set lineart modifiers
-    lineart = get_lineart_modifier()
-    lineart.source_vertex_group = filter_source
-
-    gp = get_lineart_gpencil()
-    # add gpencil vertex group
-    if gp.vertex_groups.find(edit_vertex_group_name) == -1:
-        gp.vertex_groups.new(name=edit_vertex_group_name)
-
-    # set vertex group
-    if modifier == 'OPACITY':
-        m = get_gp_modifier(gp, name=opacity_modifier_name, type='GP_OPACITY')
-    elif modifier == 'THICK':
-        m = get_gp_modifier(gp, name=thickness_modifier_name, type='GP_THICK')
-    elif modifier == 'TINT':
-        m = get_gp_modifier(gp, name=tint_name, type='GP_TINT')
-
-    m.vertex_group = edit_vertex_group_name
 
     bpy.ops.object.mode_set(mode='EDIT')
 
@@ -244,61 +195,46 @@ class DSKJAL_OT_LINEART_TOOL_FREE_CAMERA(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class DSKJAL_OT_LINEART_TOOL_OPACITY(bpy.types.Operator):
-    bl_idname = "dskjal.linearttoolopacity"
-    bl_label = "Opacity"
-    weight : bpy.props.FloatProperty()
-    type : bpy.props.StringProperty()
-    def execute(self, context):
-        edit_vertex_group(modifier='OPACITY', type=self.type, weight=self.weight)
-        return {'FINISHED'}
-
-class DSKJAL_OT_LINEART_TOOL_THICKNESS(bpy.types.Operator):
-    bl_idname = "dskjal.linearttoolthickness"
-    bl_label = "Set thickness weight"
-    weight : bpy.props.FloatProperty()
-    def execute(self, context):
-        if self.weight == 0:
-            edit_vertex_group(modifier='THICK', type='REMOVE')
-        else:
-            edit_vertex_group(modifier='THICK', type='ADD', weight=self.weight)
-        return {'FINISHED'}    
-
-class DSKJAL_OT_LINEART_TOOL_ADD_TINT(bpy.types.Operator):
-    bl_idname = "dskjal.linearttooladdtint"
+class DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER(bpy.types.Operator):
+    bl_idname = "dskjal.linearttooladdmodifier"
     bl_label = "Add color"
+    modifier_name : bpy.props.StringProperty()
+    modifier_type : bpy.props.StringProperty() # {'GP_TINT', 'GP_THICK', 'GP_OPACITY'}
+    
     def execute(self, context):
         gp = get_lineart_gpencil()
-        tint = gp.grease_pencil_modifiers.new(name=tint_modifier_name, type='GP_TINT')
-        tint.color = (0, 0, 0)
+        m = gp.grease_pencil_modifiers.new(name=self.modifier_name, type=self.modifier_type)
+        if self.modifier_type == 'GP_THICK':
+            m.normalize_thickness = True
         filter_source = get_filter_source()
-        tint_vg_name = filter_source + tint.name
-        gp.vertex_groups.new(name=tint_vg_name)
-        tint.vertex_group = tint_vg_name
+        vg_name = filter_source + m.name
+        gp.vertex_groups.new(name=vg_name)
+        m.vertex_group = vg_name
         ob = context.active_object
-        if ob.vertex_groups.find(tint.name) == -1:
-            ob.vertex_groups.new(name=tint_vg_name)
+        if ob.vertex_groups.find(m.name) == -1:
+            ob.vertex_groups.new(name=vg_name)
             create_lineart_vertex_group(ob, filter_source)
         else:
             # clear vertex group
-            ob.vertex_groups.remove(ob.vertex_groups[tint.name])
-            ob.vertex_groups.new(name=tint_vg_name)
+            ob.vertex_groups.remove(ob.vertex_groups[m.name])
+            ob.vertex_groups.new(name=vg_name)
             
         return {'FINISHED'}
 
 # type = {'ADD', 'REMOVE', 'DELETE'}
-# remove tint modifier if type == 'DELETE' 
-class DSKJAL_OT_LINEART_TOOL_TINT(bpy.types.Operator):
-    bl_idname = 'dskjal.linearttooltint'
+# remove modifier if type == 'DELETE' 
+class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
+    bl_idname = 'dskjal.linearttooleditmodifier'
     bl_label = 'Tint'
-    tint_name : bpy.props.StringProperty()
+    modifier_name : bpy.props.StringProperty()
     type : bpy.props.StringProperty()
     def execute(self, context):
+        gp = get_lineart_gpencil()
+        m = gp.grease_pencil_modifiers[self.modifier_name]
         if self.type == 'DELETE':
-            gp = get_lineart_gpencil()
-            gp.grease_pencil_modifiers.remove(gp.grease_pencil_modifiers[self.tint_name])
+            gp.grease_pencil_modifiers.remove(m)
         else:
-            edit_vertex_group(modifier='TINT', type=self.type, weight=1, tint_name=self.tint_name)
+            edit_vertex_group(modifier=m, type=self.type, weight=1)
         return {'FINISHED'}
 
 class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
@@ -394,43 +330,75 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         col.separator()
 
-        thick = None
-        opacity = None
-        thick = get_gp_modifier(gp=grease_pencil, name=thickness_modifier_name, type='GP_THICK')
-        opacity = get_gp_modifier(gp=grease_pencil, name=opacity_modifier_name, type='GP_OPACITY')
-        
         col.use_property_split = True
         # Object mode
         # opacity
+        col.separator()
         col.label(text='Opacity')
-        if opacity is not None:
-            col.prop(line_art_modifier, 'opacity', text='Base Opacity')
-            col.prop(opacity, 'factor', text='Factor', slider=True)
+        # base
+        col.prop(line_art_modifier, 'opacity', text='Base Opacity')
+        col.separator()
+        # opacity
+        opacities = get_gp_modifiers(modifier='GP_OPACITY')
+        for opacity in opacities:
+            row = col.row(align=True)
+            row.use_property_split = False
+            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
+            ot.modifier_name = opacity.name
+            ot.type = 'DELETE'
+            row.prop(opacity, 'name', text='')
+            row.prop(opacity, 'factor', text='')
             if is_edit_mode:
-                col.separator()
-                col.use_property_split = False
-                col.prop(my_props, 'opacity_weight', text='Weight', slider=True)
                 row = col.row(align=True)
-                opacity_ot = row.operator('dskjal.linearttoolopacity', text='Assign')
-                opacity_ot.type = 'ADD'
-                opacity_ot.weight = my_props.opacity_weight
-                opacity_ot = row.operator('dskjal.linearttoolopacity', text='Remove')
-                opacity_ot.type = 'REMOVE'                    
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                ot.modifier_name = opacity.name
+                ot.type = 'ADD'
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
+                ot.modifier_name = opacity.name
+                ot.type = 'REMOVE'
+                col.separator(factor=2)
+            row = col.row(align=True)
+            col.separator()
+
+        if is_edit_mode:
+            col.separator()
+            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Opacity")                
+            ot.modifier_type = 'GP_OPACITY'
+            ot.modifier_name = opacity_modifier_name
 
         # thickness
         col.separator()
         col.label(text='Thickness')
-        if thick is not None:
-            col.prop(line_art_modifier, 'thickness', text='Base Thickness')
-            col.prop(thick, 'thickness', text='Thickness')
+        # base
+        col.prop(line_art_modifier, 'thickness', text='Base Thickness')
+        col.separator()
+        # thickness
+        thicks = get_gp_modifiers(modifier='GP_THICK')
+        for thick in thicks:
+            row = col.row(align=True)
+            row.use_property_split = False
+            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
+            ot.modifier_name = thick.name
+            ot.type = 'DELETE'
+            row.prop(thick, 'name', text='')
+            row.prop(thick, 'thickness', text='')
             if is_edit_mode:
-                col.separator()
-                col.prop(my_props, 'thickness_weight', text='Weight', slider=True)
                 row = col.row(align=True)
-                thick_ot = row.operator('dskjal.linearttoolthickness', text='Assign')
-                thick_ot.weight = my_props.thickness_weight
-                thick_ot = row.operator('dskjal.linearttoolthickness', text='Remove')
-                thick_ot.weight = 0
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                ot.modifier_name = thick.name
+                ot.type = 'ADD'
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
+                ot.modifier_name = thick.name
+                ot.type = 'REMOVE'
+                col.separator(factor=2)
+            row = col.row(align=True)
+            col.separator()
+
+        if is_edit_mode:
+            col.separator()
+            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Thickness")                
+            ot.modifier_type = 'GP_THICK'
+            ot.modifier_name = thickness_modifier_name
 
         # color
         col.separator()
@@ -450,12 +418,12 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.separator()
 
         # colors
-        tints = get_gp_tint_modifiers()
+        tints = get_gp_modifiers(modifier='GP_TINT')
         for tint in tints:
             row = col.row(align=True)
             row.use_property_split = False
-            ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
-            ot.tint_name = tint.name
+            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
+            ot.modifier_name = tint.name
             ot.type = 'DELETE'
             row.prop(tint, 'color', text='')
             col.use_property_split = False
@@ -463,19 +431,21 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             if is_edit_mode:
                 col.separator()
                 row = col.row(align=True)
-                ot = row.operator('dskjal.linearttooltint', text='Assign')
-                ot.tint_name = tint.name
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                ot.modifier_name = tint.name
                 ot.type = 'ADD'
-                ot = row.operator('dskjal.linearttooltint', text='Remove')
-                ot.tint_name = tint.name
+                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
+                ot.modifier_name = tint.name
                 ot.type = 'REMOVE'
-                col.separator(factor=3)
+                col.separator(factor=2)
             row = col.row(align=True)
             col.separator()
 
         if is_edit_mode:
             col.separator()
-            col.operator('dskjal.linearttooladdtint', text="Add Color")                
+            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Color")                
+            ot.modifier_type = 'GP_TINT'
+            ot.modifier_name = tint_modifier_name
 
 
 def gp_object_poll(self, object):
@@ -492,9 +462,8 @@ classes = (
     DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK,
     DSKJAL_OT_LINEART_TOOL_FREE_CAMERA,
     DSKJAL_OT_LINEART_TOOL_OPACITY,
-    DSKJAL_OT_LINEART_TOOL_THICKNESS,
-    DSKJAL_OT_LINEART_TOOL_TINT,
-    DSKJAL_OT_LINEART_TOOL_ADD_TINT,
+    DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER,
+    DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER,
     DSKJAL_PT_LINEART_TOOL_UI,
     DSKJAL_LINEART_TOOL_PROPS
 )
