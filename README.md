@@ -10,6 +10,10 @@ After setup line art with Add Line Art Grease Pencil, assign vertices to opacity
 ラインアートはカメラから見る必要がある。Lock はカメラビューに移行し、カメラをビューにロックする。  
 Line art needs to be viewed from a camera. Lock button switches to camera view and lock camera to view.
 
+## 幅 Thickness
+Base Thickness は未割り当ての頂点の幅で、幅はウェイトが割り当てられた頂点の幅を設定する。  
+Base Thickness is the thickness that unassigned vertices. Thickness is the thickness that is assigned vertices.
+
 ## 色の設定 Color setting
 Add Color で色を追加した後で割り当てを行う。  
 Add color with Add Color, then assign vertices.
