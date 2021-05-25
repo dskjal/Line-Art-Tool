@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 4),
+    "version" : (1, 5),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -32,12 +32,19 @@ bl_info = {
     "category" : "Mesh"
 }
 
+default_filter_source = 'lineart_'
 opacity_vertex_group_suffix = '_opacity'
 thickness_vertex_group_suffix = '_thickness'
 opacity_modifier_name = 'lineart_tool_hide'
 thickness_modifier_name = 'lineart_tool_thickness'
 tint_modifier_name = 'lineart_tool_tint'
 base_color_name = 'lineart_tool_base_color'
+
+def get_filter_source():
+    gp = get_lineart_gpencil(is_create=False)
+    if gp is None:
+        return default_filter_source
+    return gp.grease_pencil_modifiers[bpy.context.scene.lineart_tool_props.lineart_modifier].source_vertex_group
 
 def create_lineart_grease_pencil():
     ob = bpy.context.active_object
@@ -60,18 +67,20 @@ def create_lineart_grease_pencil():
     la.source_type = 'SCENE'
     la.target_layer = layer.info
     la.target_material = material
+    filter_source = get_filter_source()
+    la.source_vertex_group = filter_source
 
     # thickness modifier
     thick = gp.grease_pencil_modifiers.new(name=thickness_modifier_name, type='GP_THICK')
     thick.normalize_thickness = True
-    thick_vg_name = bpy.context.scene.lineart_tool_props.filter_source + thickness_vertex_group_suffix
+    thick_vg_name = filter_source + thickness_vertex_group_suffix
     gp.vertex_groups.new(name=thick_vg_name)
     thick.vertex_group = thick_vg_name
 
     # opacity modifier
     opacity = gp.grease_pencil_modifiers.new(name=opacity_modifier_name, type='GP_OPACITY')
     opacity.factor = 0
-    opacity_vg_name = bpy.context.scene.lineart_tool_props.filter_source + opacity_vertex_group_suffix
+    opacity_vg_name = filter_source + opacity_vertex_group_suffix
     gp.vertex_groups.new(name=opacity_vg_name)
     opacity.vertex_group = opacity_vg_name
 
@@ -81,14 +90,17 @@ def create_lineart_grease_pencil():
     if ob is not None:
         bpy.ops.object.mode_set(mode=old_mode)
 
-def get_lineart_gpencil():
+def get_lineart_gpencil(is_create=True):
     gp = bpy.context.scene.lineart_tool_props.gp_object
     la_name = bpy.context.scene.lineart_tool_props.lineart_modifier
     if gp != None:
         if gp.grease_pencil_modifiers.find(la_name) != -1 and gp.grease_pencil_modifiers[la_name].type == 'GP_LINEART':
             return gp
 
-    return create_lineart_grease_pencil()
+    if is_create:
+        return create_lineart_grease_pencil()
+    
+    return None
 
 def get_lineart_modifier():
     gp = get_lineart_gpencil()
@@ -143,7 +155,7 @@ def edit_vertex_group(modifier, type, weight=1, tint_name=''):
         bpy.ops.object.mode_set(mode='EDIT')
         return
     
-    filter_source = bpy.context.scene.lineart_tool_props.filter_source
+    filter_source = get_filter_source()
     if modifier == 'OPACITY':
         edit_vertex_group_name = filter_source + opacity_vertex_group_suffix
     elif modifier == 'THICK':
@@ -259,14 +271,14 @@ class DSKJAL_OT_LINEART_TOOL_ADD_TINT(bpy.types.Operator):
         gp = get_lineart_gpencil()
         tint = gp.grease_pencil_modifiers.new(name=tint_modifier_name, type='GP_TINT')
         tint.color = (0, 0, 0)
-        filter_source = context.scene.lineart_tool_props.filter_source
+        filter_source = get_filter_source()
         tint_vg_name = filter_source + tint.name
         gp.vertex_groups.new(name=tint_vg_name)
         tint.vertex_group = tint_vg_name
         ob = context.active_object
         if ob.vertex_groups.find(tint.name) == -1:
             ob.vertex_groups.new(name=tint_vg_name)
-            create_lineart_vertex_group(ob, context.scene.lineart_tool_props.filter_source)
+            create_lineart_vertex_group(ob, filter_source)
         else:
             # clear vertex group
             ob.vertex_groups.remove(ob.vertex_groups[tint.name])
@@ -349,7 +361,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             col.prop(line_art_modifier, 'source_object')
             
         col.separator()
-        col.prop(my_props, 'filter_source')
+        col.prop(line_art_modifier, 'source_vertex_group', text="Filter Source")
 
         # Edge type
         col.separator()
@@ -424,7 +436,9 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             col.label(text='Color')
             if grease_pencil is not None:
                 # base color
-                col.prop(grease_pencil.data.materials[base_color_name].grease_pencil, 'color', text='Base Color')
+                col.prop(line_art_modifier, 'target_material', text='Base Color Material')
+                if line_art_modifier.target_material is not None:
+                    col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
                 col.separator()
                 
                 tints = get_gp_tint_modifiers()
@@ -477,7 +491,9 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             #                 space.shading.type = 'MATERIAL'
 
             # base color
-            col.prop(grease_pencil.data.materials[base_color_name].grease_pencil, 'color', text='Base Color')
+            col.prop(line_art_modifier, 'target_material', text='Base Color Material')
+            if line_art_modifier.target_material is not None:
+                col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
             col.separator()
 
             tints = get_gp_tint_modifiers()
@@ -500,7 +516,6 @@ def gp_object_poll(self, object):
 class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
     gp_object : bpy.props.PointerProperty(name='gp_object', description='Grease Pencil Object', type=bpy.types.Object, poll=gp_object_poll)
     lineart_modifier : bpy.props.StringProperty(name='line_art_modifier', description='Line Art Modifier', default='Line Art')
-    filter_source : bpy.props.StringProperty(name='filter_source', description='Filter Source', default='lineart_')
     opacity_weight : bpy.props.FloatProperty(name='opacity_weight', description='Line opacity weight', default=1, min=0, max=1)
     thickness_weight : bpy.props.FloatProperty(name='thickness_weight', description='Line thickness weight', default=1, min=0, max=1)
 
