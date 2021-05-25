@@ -332,7 +332,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         col.use_property_split = True
 
-        def print_modifier(modifier, modifier_name):
+        def print_modifier(modifier, modifier_name, name):
             modifiers = get_gp_modifiers(modifier=modifier)
             for m in modifiers:
                 row = col.row(align=True)
@@ -360,25 +360,23 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
             if is_edit_mode:
                 col.separator()
-                ot = col.operator('dskjal.linearttooladdmodifier', text="Add Opacity")                
+                ot = col.operator('dskjal.linearttooladdmodifier', text="Add "+name)                
                 ot.modifier_type = modifier
                 ot.modifier_name = modifier_name
 
         # opacity
         col.separator()
         col.label(text='Opacity')
-        # base
         col.prop(line_art_modifier, 'opacity', text='Base Opacity')
         col.separator()
-        print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name)
+        print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name, name='Opacity')
 
         # thickness
         col.separator()
         col.label(text='Thickness')
-        # base
         col.prop(line_art_modifier, 'thickness', text='Base Thickness')
         col.separator()
-        print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name)
+        print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name, name='Thickness')
 
         # color
         col.separator()
