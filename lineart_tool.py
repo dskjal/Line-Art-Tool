@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 2),
+    "version" : (1, 3),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -315,7 +315,19 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.separator()
 
         # Line Art
-        col.label(text='Line Art')
+        if my_props.gp_object != None and my_props.gp_object.grease_pencil_modifiers.find(my_props.lineart_modifier) != -1:
+            lineart_modifier = my_props.gp_object.grease_pencil_modifiers[my_props.lineart_modifier]
+            # visibility icon
+            row = col.row(align=True)
+            row.use_property_split = False
+            row.prop(lineart_modifier, 'show_in_editmode', text='')
+            row.prop(lineart_modifier, 'show_viewport', text='')
+            row.prop(lineart_modifier, 'show_render', text='')
+            row.separator()
+            row.label(text='Line Art')
+
+        else:
+            col.label(text='Line Art')
         grease_pencil = None
         line_art_modifier = None
         col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='GP Object')
