@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (1, 0),
+    "version" : (1, 1),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -37,6 +37,7 @@ thickness_vertex_group_suffix = '_thickness'
 opacity_modifier_name = 'lineart_tool_hide'
 thickness_modifier_name = 'lineart_tool_thickness'
 tint_modifier_name = 'lineart_tool_tint'
+base_color_name = 'lineart_tool_base_color'
 
 def create_lineart_grease_pencil():
     ob = bpy.context.active_object
@@ -45,7 +46,7 @@ def create_lineart_grease_pencil():
         bpy.ops.object.mode_set(mode='OBJECT')
 
     gp_data = bpy.data.grease_pencils.new('Line Art')
-    material = bpy.data.materials.new('Black')
+    material = bpy.data.materials.new(base_color_name)
     bpy.data.materials.create_gpencil_data(material)
     gp_data.materials.append(material)
     layer = gp_data.layers.new('GP_Layer')
@@ -300,6 +301,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
     def draw(self, context):
         my_props = context.scene.lineart_tool_props
+        self.layout.use_property_split = True
         col = self.layout.column(align=True)
         col.operator('dskjal.linearttoolautosetup', text='Add Line Art Grease Pencil')
         col.separator()
@@ -344,13 +346,17 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.separator()
         col.label(text='Edge Types')
         row = col.row(align=True)
+        row.use_property_split = False
         row.prop(line_art_modifier, 'use_contour', text='Contour', toggle=1)
         row.prop(line_art_modifier, 'use_material', text='Material Boundaries', toggle=1)
         row = col.row(align=True)
+        row.use_property_split = False
+
         row.prop(line_art_modifier, 'use_edge_mark', text='Edge Marks', toggle=1)
         row.prop(line_art_modifier, 'use_intersection', text='Intersections', toggle=1)
 
         col.separator()
+        col.use_property_split = False
         col.prop(line_art_modifier, 'use_crease', text='Crease', toggle=1)
         col.prop(line_art_modifier, 'crease_threshold', text='', slider=True)
 
@@ -396,8 +402,13 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
             # color
             col.separator()
+            col.use_property_split = True
             col.label(text='Color')
             if grease_pencil is not None:
+                # base color
+                col.prop(grease_pencil.data.materials[base_color_name].grease_pencil, 'color', text='Base Color')
+                col.separator()
+                
                 tints = get_gp_tint_modifiers()
                 for tint in tints:
                     row = col.row(align=True)
@@ -422,6 +433,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 col.separator()
                 col.operator('dskjal.linearttooladdtint', text="Add Color")
         else:
+            col.use_property_split = True
             # Object mode
             # opacity
             col.label(text='Opacity')
@@ -446,6 +458,10 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             #                 space.shading.type = 'MATERIAL'
 
             tints = get_gp_tint_modifiers()
+            # base color
+            col.prop(grease_pencil.data.materials[base_color_name].grease_pencil, 'color', text='Base Color')
+            col.separator()
+
             for tint in tints:
                 row = col.row(align=True)
                 ot = row.operator('dskjal.linearttooltint', icon='CANCEL', text='')
