@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (2, 0),
+    "version" : (2, 1),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -237,6 +237,14 @@ class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
             edit_vertex_group(modifier=m, type=self.type, weight=1)
         return {'FINISHED'}
 
+class DSKJAL_OT_LINEART_TOOL_SET_LINEART(bpy.types.Operator):
+    bl_idname = 'dskjal.linearttoolsetlineart'
+    bl_label = 'Set Line Art'
+    modifier_name : bpy.props.StringProperty()
+    def execute(self, context):
+        context.scene.lineart_tool_props.lineart_modifier = self.modifier_name
+        return {'FINISHED'}
+
 class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
     bl_label = "Line Art Tool"
     bl_space_type = "VIEW_3D"
@@ -261,18 +269,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.separator()
 
         # Line Art
-        if my_props.gp_object != None and my_props.gp_object.grease_pencil_modifiers.find(my_props.lineart_modifier) != -1:
-            lineart_modifier = my_props.gp_object.grease_pencil_modifiers[my_props.lineart_modifier]
-            # visibility icon
-            row = col.row(align=True)
-            row.use_property_split = False
-            row.prop(lineart_modifier, 'show_in_editmode', text='')
-            row.prop(lineart_modifier, 'show_viewport', text='')
-            row.prop(lineart_modifier, 'show_render', text='')
-            row.separator()
-            row.label(text='Line Art')
-        else:
-            col.label(text='Line Art')
+        col.label(text='Line Art')
 
         grease_pencil = None
         line_art_modifier = None
@@ -287,6 +284,17 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             return
         if grease_pencil.grease_pencil_modifiers[my_props.lineart_modifier].type != 'GP_LINEART':
             return
+
+        # list line art modifiers
+        la_modifiers = [m for m in grease_pencil.grease_pencil_modifiers if m.type == 'GP_LINEART']
+        for m in la_modifiers:
+            row = col.row(align=True)
+            row.use_property_split = False
+            row.prop(m, 'name', text='')
+            row.prop(m, 'show_viewport', text='')
+            row.prop(m, 'show_render', text='')
+            ot = row.operator('dskjal.linearttoolsetlineart', text='', icon='RESTRICT_SELECT_OFF')
+            ot.modifier_name = m.name
 
         line_art_modifier = grease_pencil.grease_pencil_modifiers[my_props.lineart_modifier]
         col.separator()
@@ -439,6 +447,7 @@ classes = (
     DSKJAL_OT_LINEART_TOOL_FREE_CAMERA,
     DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER,
     DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER,
+    DSKJAL_OT_LINEART_TOOL_SET_LINEART,
     DSKJAL_PT_LINEART_TOOL_UI,
     DSKJAL_LINEART_TOOL_PROPS
 )
