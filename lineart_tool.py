@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (2, 1),
+    "version" : (2, 2),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -46,6 +46,14 @@ def get_filter_source():
         return default_filter_source
     return gp.grease_pencil_modifiers[bpy.context.scene.lineart_tool_props.lineart_modifier].source_vertex_group
 
+def add_lineart_modifier(gp, layer_name, material, filter_source):
+    la = gp.grease_pencil_modifiers.new(name='Line Art', type='GP_LINEART')
+    la.source_type = 'SCENE'
+    la.target_layer = layer_name
+    la.target_material = material
+    la.source_vertex_group = filter_source
+    return la
+
 def create_lineart_grease_pencil():
     ob = bpy.context.active_object
     old_mode = 'OBJECT' if ob is None else ob.mode
@@ -61,14 +69,9 @@ def create_lineart_grease_pencil():
     
     gp = bpy.data.objects.new('Line Art', gp_data)
     bpy.context.scene.collection.objects.link(gp)
-
     gp.show_in_front = True
-    la = gp.grease_pencil_modifiers.new(name='Line Art', type='GP_LINEART')
-    la.source_type = 'SCENE'
-    la.target_layer = layer.info
-    la.target_material = material
     filter_source = get_filter_source()
-    la.source_vertex_group = filter_source
+    add_lineart_modifier(gp, layer.info, material, filter_source)
 
     # thickness modifier
     thick = gp.grease_pencil_modifiers.new(name=thickness_modifier_name, type='GP_THICK')
@@ -147,9 +150,21 @@ def edit_vertex_group(modifier, type, weight=1):
 class DSKJAL_OT_LINEART_TOOL_AUTO_SETUP(bpy.types.Operator):
     bl_idname = "dskjal.linearttoolautosetup"
     bl_label = "Setup Line Art"
+    type : bpy.props.StringProperty() # type = {'GP', 'LINEART'}
   
     def execute(self, context):
-        create_lineart_grease_pencil()
+        if self.type == 'GP':
+            create_lineart_grease_pencil()
+        elif self.type == 'LINEART':
+            my_props = context.scene.lineart_tool_props
+            if my_props.gp_object == None:
+                raise Exception('gp_object is None')
+            
+            gp = my_props.gp_object
+            data = gp.data
+            la = add_lineart_modifier(gp, data.layers[0].info, data.materials[0], get_filter_source())
+            my_props.lineart_modifier = la.name
+
         return {'FINISHED'}
 
 class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
@@ -259,7 +274,13 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         my_props = context.scene.lineart_tool_props
         self.layout.use_property_split = True
         col = self.layout.column(align=True)
-        col.operator('dskjal.linearttoolautosetup', text='Add Line Art Grease Pencil')
+        ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Grease Pencil')
+        ot.type = 'GP'
+        if my_props.gp_object != None:
+            col.separator()
+            ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Modifier')
+            ot.type = 'LINEART'
+        
         col.separator(factor=3)
         # camera
         col.label(text='Camera')
@@ -290,6 +311,9 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         for m in la_modifiers:
             row = col.row(align=True)
             row.use_property_split = False
+            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
+            ot.modifier_name = m.name
+            ot.type = 'DELETE'
             row.prop(m, 'name', text='')
             row.prop(m, 'show_viewport', text='')
             row.prop(m, 'show_render', text='')
