@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (2, 3),
+    "version" : (2, 4),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -288,6 +288,13 @@ class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
         gp = get_lineart_gpencil()
         m = gp.grease_pencil_modifiers[self.modifier_name]
         if self.type == 'DELETE':
+            if m.type == 'GP_LINEART':
+                # delete material
+                mat = m.target_material
+                if mat is not None:
+                    m.target_material = None
+                    gp.data.materials.pop(index=gp.data.materials.find(mat.name))
+
             name = get_active_line_art().name
             gp.grease_pencil_modifiers.remove(m)
             set_active_line_art(gp, name)
