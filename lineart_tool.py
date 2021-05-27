@@ -512,6 +512,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         col.use_property_split = True
 
+        # Layer
         row = col.row(align=True)
         row.use_property_split = False
         row.alignment = 'LEFT'
@@ -524,8 +525,10 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 ot.command = 'DELETE'
                 ot.layer_name = l.info
                 row.prop(l, 'info', text='')
+                row.prop(l, 'blend_mode', text='')
                 row.prop(l, 'opacity', text='')
                 row.prop(l, 'hide', text='')
+                row.prop(l, 'use_lights', text='', icon='LIGHT')
                 ot = row.operator('dskjal.linearttoollayer', text='', icon='TRIA_UP')
                 ot.command = 'UP'
                 ot.layer_name = l.info
