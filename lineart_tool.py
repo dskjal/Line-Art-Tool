@@ -411,6 +411,19 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             row.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
             row.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
+            # chaining
+            box.use_property_split = False
+            box.alignment = 'LEFT'
+            box.prop(my_props, 'chaining_is_open', text='Chaining', icon='TRIA_DOWN' if my_props.chaining_is_open else 'TRIA_RIGHT', emboss=False)
+            if my_props.chaining_is_open:
+                cbox = box.box()
+                cbox.use_property_split = True
+                cbox.prop(active_lineart, 'use_fuzzy_intersections')
+                cbox.prop(active_lineart, 'use_fuzzy_all')
+                cbox.prop(active_lineart, 'chaining_image_threshold')
+                cbox.prop(active_lineart, 'split_angle', slider=True)
+
+
         col.use_property_split = True
 
         def print_modifier(modifier, modifier_name, name):
@@ -514,6 +527,7 @@ class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
 
     # ui
     lineart_ui_is_open : bpy.props.BoolProperty(name='lineart_ui_is_open', default=True)
+    chaining_is_open : bpy.props.BoolProperty(name='chaining_is_open', default=False)
 
 classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
