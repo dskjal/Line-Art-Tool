@@ -9,8 +9,8 @@ Blender 2.93 is required.
 Add Line Art Grease Pencil でラインアートを自動設定した後、不透明度や幅を割り当てる。  
 After setup line art with Add Line Art Grease Pencil, assign vertices to opacity or thickness.  
 
-エッジタイプやオブジェクトごとにラインアートモディフィアを分けたいときは、Add Line Art Modifier でラインアートモディフィアを追加できる。一番右端の矢印アイコンをクリックすることで、アクティブなラインアートモディフィアを選択できる。  
-When you want to add some line art modifier for edge type or object, press 'Add Line Art Modifier.' You can select the active line art modifier by clicking the arrow icon on the far right.  
+エッジタイプやオブジェクトごとにラインアートモディフィアを分けたいときは、Add Line Art Modifier でラインアートモディフィアを追加できる。一番右端の矢印アイコンをクリックすることで、アクティブなラインアートモディフィアを選択できる。アクティブなラインアートは名前が赤くなる。  
+When you want to add some line art modifier for edge type or object, press 'Add Line Art Modifier.' You can select the active line art modifier by clicking the arrow icon on the far right. An active line art name is redded.  
 
 Base {Opacity, Thickness, Color} は未割り当ての要素を変更する。Add {Opacity, Thickness, Color} でレイヤーを追加し、複数の要素を管理できる。要素の名前は自由に変更できる。  
 Base {Opacity, Thickness, Color} change unassigned elements. Add {Opacity, Thickness, Color} add layer and manage multiple elements. You can change for each element names.
