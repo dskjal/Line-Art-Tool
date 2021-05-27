@@ -19,6 +19,10 @@ Base {Opacity, Thickness, Color} change unassigned elements. Add {Opacity, Thick
 ラインアートはカメラから見る必要がある。Lock はカメラビューに移行し、カメラをビューにロックする。  
 Line art needs to be viewed from a camera. Lock button switches to camera view and lock camera to view.
 
+## レイヤー Layer
+レイヤーの電球アイコンは「ライトを使用」オプション。これを OFF にすると線がライトの影響を受けなくなる。  
+A bulb icon in a layer is the "Use Lights" option. Disable line lighting when the option is off.
+
 # 色がつかない場合 Color is not working
 ３Ｄビューのシェーディングをマテリアルプレビューかレンダーにする。  
 Switch viewport shading to material preview or render.
