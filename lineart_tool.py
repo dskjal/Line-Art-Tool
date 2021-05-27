@@ -364,46 +364,52 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Modifier')
         ot.type = 'LINEART'
 
-        col.separator(factor=3)
-        col.prop(active_lineart, 'source_type')
-        if active_lineart.source_type == 'COLLECTION':
-            col.prop(active_lineart, 'source_collection')
-        elif active_lineart.source_type == 'OBJECT':
-            col.prop(active_lineart, 'source_object')
-            
-        col.separator()
-        #col.prop(active_lineart, 'source_vertex_group', text="Filter Source")
-
-        # Edge type
-        col.separator()
-        col.label(text='Edge Types')
-        row = col.row(align=True)
-        row.use_property_split = False
-        row.prop(active_lineart, 'use_contour', text='Contour', toggle=1)
-        row.prop(active_lineart, 'use_material', text='Material Boundaries', toggle=1)
-        row = col.row(align=True)
-        row.use_property_split = False
-
-        row.prop(active_lineart, 'use_intersection', text='Intersections', toggle=1)
-
-        col.separator()
-        col.use_property_split = False
-        col.prop(active_lineart, 'use_edge_mark', text='Edge Marks', toggle=1)
         ob = context.active_object
         is_edit_mode = ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT'
-        if is_edit_mode:
-            row = col.row(align=True)
+
+        col.separator(factor=2)
+        row = col.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'LEFT'
+        row.prop(my_props, 'lineart_ui_is_open', text='Line Art Settings', icon='TRIA_DOWN' if my_props.lineart_ui_is_open else 'TRIA_RIGHT', emboss=False)
+        if my_props.lineart_ui_is_open:
+            box = col.box()
+            box.prop(active_lineart, 'source_type')
+            if active_lineart.source_type == 'COLLECTION':
+                box.prop(active_lineart, 'source_collection')
+            elif active_lineart.source_type == 'OBJECT':
+                box.prop(active_lineart, 'source_object')
+                
+            #box.prop(active_lineart, 'source_vertex_group', text="Filter Source")
+
+            # Edge type
+            box.label(text='Edge Types')
+            row = box.row(align=True)
             row.use_property_split = False
-            ot = row.operator('mesh.mark_freestyle_edge', text="Mark")
-            ot = row.operator('mesh.mark_freestyle_edge', text='Clear')
-            ot.clear = True
+            row.prop(active_lineart, 'use_contour', text='Contour', toggle=1)
+            row.prop(active_lineart, 'use_material', text='Material Boundaries', toggle=1)
+            row = box.row(align=True)
+            row.use_property_split = False
 
-        col.separator()
-        col.use_property_split = False
-        col.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
-        col.prop(active_lineart, 'crease_threshold', text='', slider=True)
+            row.prop(active_lineart, 'use_intersection', text='Intersections', toggle=1)
+            if is_edit_mode:
+                box.separator()
 
-        col.separator()
+            box.use_property_split = False
+            box.prop(active_lineart, 'use_edge_mark', text='Edge Marks', toggle=1)
+            if is_edit_mode:
+                row = box.row(align=True)
+                row.use_property_split = False
+                ot = row.operator('mesh.mark_freestyle_edge', text="Mark")
+                ot = row.operator('mesh.mark_freestyle_edge', text='Clear')
+                ot.clear = True
+
+            if is_edit_mode:
+                box.separator()
+            box.use_property_split = False
+            row = box.row(align=True)
+            row.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
+            row.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
         col.use_property_split = True
 
@@ -505,6 +511,9 @@ def gp_object_poll(self, object):
 class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
     gp_object : bpy.props.PointerProperty(name='gp_object', description='Grease Pencil Object', type=bpy.types.Object, poll=gp_object_poll)
     active_lineart_idx : bpy.props.IntProperty(name='active_lineart_idx', default=0, min=-1)
+
+    # ui
+    lineart_ui_is_open : bpy.props.BoolProperty(name='lineart_ui_is_open', default=True)
 
 classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
