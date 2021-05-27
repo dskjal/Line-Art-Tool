@@ -44,9 +44,41 @@ def get_filter_source():
     gp = get_lineart_gpencil(is_create=False)
     if gp is None:
         return default_filter_source
-    return gp.grease_pencil_modifiers[bpy.context.scene.lineart_tool_props.lineart_modifier].source_vertex_group
+    la = get_active_line_art()
+    if la == None:
+        return default_filter_source
+    
+    return la.source_vertex_group
 
-def add_lineart_modifier(gp, layer_name, material, filter_source):
+def get_active_line_art():
+    idx = bpy.context.scene.lineart_tool_props.active_lineart_idx
+    gp = bpy.context.scene.lineart_tool_props.gp_object
+    if gp == None:
+        return None
+    if idx >= len(gp.grease_pencil_modifiers):
+        return None
+    
+    for i in reversed(range(0, idx+1)):
+        if gp.grease_pencil_modifiers[i].type == 'GP_LINEART':
+            return gp.grease_pencil_modifiers[i]
+
+    return None
+
+def set_active_line_art(gp, line_art_name):
+    idx = gp.grease_pencil_modifiers.find(line_art_name)
+    if idx == -1:
+        idx = bpy.context.scene.lineart_tool_props.active_lineart_idx - 1
+        if idx == -1 and len(gp.grease_pencil_modifiers) != 0:
+            idx = 0
+
+    bpy.context.scene.lineart_tool_props.active_lineart_idx = idx
+
+def add_lineart_modifier(gp, layer_name, filter_source):
+    # assign new material
+    material = bpy.data.materials.new(base_color_name)
+    bpy.data.materials.create_gpencil_data(material)
+    gp.data.materials.append(material)
+
     la = gp.grease_pencil_modifiers.new(name='Line Art', type='GP_LINEART')
     la.source_type = 'SCENE'
     la.target_layer = layer_name
@@ -61,9 +93,6 @@ def create_lineart_grease_pencil():
         bpy.ops.object.mode_set(mode='OBJECT')
 
     gp_data = bpy.data.grease_pencils.new('Line Art')
-    material = bpy.data.materials.new(base_color_name)
-    bpy.data.materials.create_gpencil_data(material)
-    gp_data.materials.append(material)
     layer = gp_data.layers.new('GP_Layer')
     layer.frames.new(bpy.context.scene.frame_current)
     
@@ -71,7 +100,7 @@ def create_lineart_grease_pencil():
     bpy.context.scene.collection.objects.link(gp)
     gp.show_in_front = True
     filter_source = get_filter_source()
-    add_lineart_modifier(gp, layer.info, material, filter_source)
+    add_lineart_modifier(gp, layer.info, filter_source)
 
     # thickness modifier
     thick = gp.grease_pencil_modifiers.new(name=thickness_modifier_name, type='GP_THICK')
@@ -88,17 +117,15 @@ def create_lineart_grease_pencil():
     opacity.vertex_group = opacity_vg_name
 
     bpy.context.scene.lineart_tool_props.gp_object = gp
-    bpy.context.scene.lineart_tool_props.lineart_modifier = 'Line Art'
+    set_active_line_art(gp, 'Line Art')
 
     if ob is not None:
         bpy.ops.object.mode_set(mode=old_mode)
 
 def get_lineart_gpencil(is_create=True):
-    gp = bpy.context.scene.lineart_tool_props.gp_object
-    la_name = bpy.context.scene.lineart_tool_props.lineart_modifier
-    if gp != None:
-        if gp.grease_pencil_modifiers.find(la_name) != -1 and gp.grease_pencil_modifiers[la_name].type == 'GP_LINEART':
-            return gp
+    la = get_active_line_art()
+    if la != None:
+        return bpy.context.scene.lineart_tool_props.gp_object
 
     if is_create:
         return create_lineart_grease_pencil()
@@ -162,8 +189,22 @@ class DSKJAL_OT_LINEART_TOOL_AUTO_SETUP(bpy.types.Operator):
             
             gp = my_props.gp_object
             data = gp.data
-            la = add_lineart_modifier(gp, data.layers[0].info, data.materials[0], get_filter_source())
-            my_props.lineart_modifier = la.name
+            la = add_lineart_modifier(gp, data.layers[0].info, get_filter_source())
+
+            # reorder
+            # context error work around
+            old_active = context.active_object
+            context.view_layer.objects.active = gp
+
+            idx = 0
+            for i in range(len(gp.grease_pencil_modifiers)):
+                m = gp.grease_pencil_modifiers[i]
+                if m.type == 'GP_LINEART':
+                    bpy.ops.object.gpencil_modifier_move_to_index(index=idx, modifier=m.name)
+                    idx += 1
+
+            set_active_line_art(gp, la.name)
+            context.view_layer.objects.active = old_active
 
         return {'FINISHED'}
 
@@ -247,7 +288,9 @@ class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
         gp = get_lineart_gpencil()
         m = gp.grease_pencil_modifiers[self.modifier_name]
         if self.type == 'DELETE':
+            name = get_active_line_art().name
             gp.grease_pencil_modifiers.remove(m)
+            set_active_line_art(gp, name)
         else:
             edit_vertex_group(modifier=m, type=self.type, weight=1)
         return {'FINISHED'}
@@ -257,7 +300,7 @@ class DSKJAL_OT_LINEART_TOOL_SET_LINEART(bpy.types.Operator):
     bl_label = 'Set Line Art'
     modifier_name : bpy.props.StringProperty()
     def execute(self, context):
-        context.scene.lineart_tool_props.lineart_modifier = self.modifier_name
+        set_active_line_art(context.scene.lineart_tool_props.gp_object, self.modifier_name)
         return {'FINISHED'}
 
 class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
@@ -276,11 +319,6 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col = self.layout.column(align=True)
         ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Grease Pencil')
         ot.type = 'GP'
-        if my_props.gp_object != None:
-            col.separator()
-            ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Modifier')
-            ot.type = 'LINEART'
-        
         col.separator(factor=3)
         # camera
         col.label(text='Camera')
@@ -291,19 +329,18 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         # Line Art
         col.label(text='Line Art')
-
         grease_pencil = None
         line_art_modifier = None
         col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='GP Object')
         grease_pencil = my_props.gp_object
         if grease_pencil == None:
             return
-            
-        col.prop_search(my_props, 'lineart_modifier', grease_pencil, 'grease_pencil_modifiers', text='Line Art Modifier')
-        # error check
-        if grease_pencil.grease_pencil_modifiers.find(my_props.lineart_modifier) == -1:
-            return
-        if grease_pencil.grease_pencil_modifiers[my_props.lineart_modifier].type != 'GP_LINEART':
+        
+        active_lineart = get_active_line_art()
+        if active_lineart == None:
+            col.separator()
+            ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Modifier')
+            ot.type = 'LINEART'
             return
 
         # list line art modifiers
@@ -314,38 +351,44 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
             ot.modifier_name = m.name
             ot.type = 'DELETE'
+            if m == active_lineart:
+                row.alert = True
             row.prop(m, 'name', text='')
+            row.alert = False
             row.prop(m, 'show_viewport', text='')
             row.prop(m, 'show_render', text='')
             ot = row.operator('dskjal.linearttoolsetlineart', text='', icon='RESTRICT_SELECT_OFF')
             ot.modifier_name = m.name
 
-        line_art_modifier = grease_pencil.grease_pencil_modifiers[my_props.lineart_modifier]
         col.separator()
-        col.prop(line_art_modifier, 'source_type')
-        if line_art_modifier.source_type == 'COLLECTION':
-            col.prop(line_art_modifier, 'source_collection')
-        elif line_art_modifier.source_type == 'OBJECT':
-            col.prop(line_art_modifier, 'source_object')
+        ot = col.operator('dskjal.linearttoolautosetup', text='Add Line Art Modifier')
+        ot.type = 'LINEART'
+
+        col.separator(factor=3)
+        col.prop(active_lineart, 'source_type')
+        if active_lineart.source_type == 'COLLECTION':
+            col.prop(active_lineart, 'source_collection')
+        elif active_lineart.source_type == 'OBJECT':
+            col.prop(active_lineart, 'source_object')
             
         col.separator()
-        #col.prop(line_art_modifier, 'source_vertex_group', text="Filter Source")
+        #col.prop(active_lineart, 'source_vertex_group', text="Filter Source")
 
         # Edge type
         col.separator()
         col.label(text='Edge Types')
         row = col.row(align=True)
         row.use_property_split = False
-        row.prop(line_art_modifier, 'use_contour', text='Contour', toggle=1)
-        row.prop(line_art_modifier, 'use_material', text='Material Boundaries', toggle=1)
+        row.prop(active_lineart, 'use_contour', text='Contour', toggle=1)
+        row.prop(active_lineart, 'use_material', text='Material Boundaries', toggle=1)
         row = col.row(align=True)
         row.use_property_split = False
 
-        row.prop(line_art_modifier, 'use_intersection', text='Intersections', toggle=1)
+        row.prop(active_lineart, 'use_intersection', text='Intersections', toggle=1)
 
         col.separator()
         col.use_property_split = False
-        col.prop(line_art_modifier, 'use_edge_mark', text='Edge Marks', toggle=1)
+        col.prop(active_lineart, 'use_edge_mark', text='Edge Marks', toggle=1)
         ob = context.active_object
         is_edit_mode = ob and ob.type in ('MESH', 'OBJECT') and context.active_object.mode == 'EDIT'
         if is_edit_mode:
@@ -357,8 +400,8 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         col.separator()
         col.use_property_split = False
-        col.prop(line_art_modifier, 'use_crease', text='Crease', toggle=1)
-        col.prop(line_art_modifier, 'crease_threshold', text='', slider=True)
+        col.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
+        col.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
         col.separator()
 
@@ -399,14 +442,14 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         # opacity
         col.separator()
         col.label(text='Opacity')
-        col.prop(line_art_modifier, 'opacity', text='Base Opacity')
+        col.prop(active_lineart, 'opacity', text='Base Opacity')
         col.separator()
         print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name, name='Opacity')
 
         # thickness
         col.separator()
         col.label(text='Thickness')
-        col.prop(line_art_modifier, 'thickness', text='Base Thickness')
+        col.prop(active_lineart, 'thickness', text='Base Thickness')
         col.separator()
         print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name, name='Thickness')
 
@@ -422,9 +465,9 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         # base color
         col.use_property_split = True
-        #col.prop(line_art_modifier, 'target_material', text='Base Color Material')
-        if line_art_modifier.target_material is not None:
-            col.prop(line_art_modifier.target_material.grease_pencil, 'color', text='Base Color')
+        #col.prop(active_lineart, 'target_material', text='Base Color Material')
+        if active_lineart.target_material is not None:
+            col.prop(active_lineart.target_material.grease_pencil, 'color', text='Base Color')
         col.separator()
 
         # colors
@@ -461,9 +504,7 @@ def gp_object_poll(self, object):
 
 class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
     gp_object : bpy.props.PointerProperty(name='gp_object', description='Grease Pencil Object', type=bpy.types.Object, poll=gp_object_poll)
-    lineart_modifier : bpy.props.StringProperty(name='line_art_modifier', description='Line Art Modifier', default='Line Art')
-    opacity_weight : bpy.props.FloatProperty(name='opacity_weight', description='Line opacity weight', default=1, min=0, max=1)
-    thickness_weight : bpy.props.FloatProperty(name='thickness_weight', description='Line thickness weight', default=1, min=0, max=1)
+    active_lineart_idx : bpy.props.IntProperty(name='active_lineart_idx', default=0, min=-1)
 
 classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
