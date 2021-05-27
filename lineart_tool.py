@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (2, 4),
+    "version" : (3, 0),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -318,6 +318,33 @@ class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
             edit_vertex_group(modifier=m, type=self.type, weight=1)
         return {'FINISHED'}
 
+class DSKJAL_OT_LINEART_TOOL_LAYER(bpy.types.Operator):
+    bl_idname = 'dskjal.linearttoollayer'
+    bl_label = 'Layer Operator'
+    command : bpy.props.StringProperty() # command = {'UP', 'DOWN', 'DELETE', 'ADD'}
+    layer_name : bpy.props.StringProperty()
+    def execute(self, context):
+        gp = get_lineart_gpencil()
+        old_active = context.active_object
+        context.view_layer.objects.active = gp
+
+        if self.command == 'ADD':
+            bpy.ops.gpencil.layer_add()
+        else:
+            layers = gp.data.layers
+            idx = layers.find(self.layer_name)
+            if idx != -1:
+                layers.active_index = idx
+
+            if self.command in ('UP', 'DOWN'):
+                bpy.ops.gpencil.layer_move(type=self.command)
+            elif self.command == 'DELETE':
+                bpy.ops.gpencil.layer_remove()
+            
+        context.view_layer.objects.active = old_active
+
+        return {'FINISHED'}
+
 class DSKJAL_OT_LINEART_TOOL_SET_LINEART(bpy.types.Operator):
     bl_idname = 'dskjal.linearttoolsetlineart'
     bl_label = 'Set Line Art'
@@ -355,6 +382,8 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         grease_pencil = None
         line_art_modifier = None
         col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='Grease Pencil')
+        col.separator(factor=3)
+        
         grease_pencil = my_props.gp_object
         if grease_pencil == None:
             return
@@ -377,6 +406,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             if m == active_lineart:
                 row.alert = True
             row.prop(m, 'name', text='')
+            row.prop_search(m, 'target_layer', grease_pencil.data, 'layers', text='')
             row.alert = False
             row.prop(m, 'show_viewport', text='')
             row.prop(m, 'show_render', text='')
@@ -435,9 +465,10 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             row.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
             # options
-            box.use_property_split = False
-            box.alignment = 'LEFT'
-            box.prop(my_props, 'lineart_option_is_open', text='Option', icon='TRIA_DOWN' if my_props.lineart_option_is_open else 'TRIA_RIGHT', emboss=False)
+            row = box.row()
+            row.use_property_split = False
+            row.alignment = 'LEFT'
+            row.prop(my_props, 'lineart_option_is_open', text='Option', icon='TRIA_DOWN' if my_props.lineart_option_is_open else 'TRIA_RIGHT', emboss=False)
             if my_props.lineart_option_is_open:
                 cbox = box.box()
                 cbox.use_property_split = True
@@ -446,9 +477,10 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 cbox.prop(active_lineart, 'use_clip_plane_boundaries')
                 
             # occlusion 
-            box.use_property_split = False
-            box.alignment = 'LEFT'
-            box.prop(my_props, 'occlusion_is_open', text='Occlusion', icon='TRIA_DOWN' if my_props.occlusion_is_open else 'TRIA_RIGHT', emboss=False)
+            row = box.row()
+            row.use_property_split = False
+            row.alignment = 'LEFT'
+            row.prop(my_props, 'occlusion_is_open', text='Occlusion', icon='TRIA_DOWN' if my_props.occlusion_is_open else 'TRIA_RIGHT', emboss=False)
             if my_props.occlusion_is_open:
                 cbox = box.box()
                 cbox.use_property_split = True
@@ -464,9 +496,10 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 ccol.prop(active_lineart, 'use_transparency_match', text='Match All Masks')
 
             # chaining
-            box.use_property_split = False
-            box.alignment = 'LEFT'
-            box.prop(my_props, 'chaining_is_open', text='Chaining', icon='TRIA_DOWN' if my_props.chaining_is_open else 'TRIA_RIGHT', emboss=False)
+            row = box.row()
+            row.use_property_split = False
+            row.alignment = 'LEFT'
+            row.prop(my_props, 'chaining_is_open', text='Chaining', icon='TRIA_DOWN' if my_props.chaining_is_open else 'TRIA_RIGHT', emboss=False)
             if my_props.chaining_is_open:
                 cbox = box.box()
                 cbox.use_property_split = True
@@ -478,6 +511,32 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
 
         col.use_property_split = True
 
+        row = col.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'LEFT'
+        row.prop(my_props, 'layer_is_open', text='Layers', icon='TRIA_DOWN' if my_props.layer_is_open else 'TRIA_RIGHT', emboss=False)
+        if my_props.layer_is_open:
+            for l in reversed(grease_pencil.data.layers):
+                row = col.row(align=True)
+                row.use_property_split = False
+                ot = row.operator('dskjal.linearttoollayer', text='', icon='CANCEL')
+                ot.command = 'DELETE'
+                ot.layer_name = l.info
+                row.prop(l, 'info', text='')
+                row.prop(l, 'opacity', text='')
+                row.prop(l, 'hide', text='')
+                ot = row.operator('dskjal.linearttoollayer', text='', icon='TRIA_UP')
+                ot.command = 'UP'
+                ot.layer_name = l.info
+                ot = row.operator('dskjal.linearttoollayer', text='', icon='TRIA_DOWN')
+                ot.command = 'DOWN'
+                ot.layer_name = l.info
+
+
+            col.separator()
+            ot = col.operator('dskjal.linearttoollayer', text='Add New Layer')
+            ot.command = 'ADD'
+        
         def print_modifier(modifier, modifier_name, name):
             modifiers = get_gp_modifiers(modifier=modifier)
             for m in modifiers:
@@ -511,63 +570,65 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 ot.modifier_name = modifier_name
 
         # opacity
-        col.separator()
-        col.label(text='Opacity')
-        col.prop(active_lineart, 'opacity', text='Base Opacity')
-        col.separator()
-        print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name, name='Opacity')
+        row = col.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'LEFT'
+        row.prop(my_props, 'opacity_is_open', text='Opacity', icon='TRIA_DOWN' if my_props.opacity_is_open else 'TRIA_RIGHT', emboss=False)
+        if my_props.opacity_is_open:
+            col.prop(active_lineart, 'opacity', text='Base Opacity')
+            col.separator()
+            print_modifier(modifier='GP_OPACITY', modifier_name=opacity_modifier_name, name='Opacity')
 
         # thickness
-        col.separator()
-        col.label(text='Thickness')
-        col.prop(active_lineart, 'thickness', text='Base Thickness')
-        col.separator()
-        print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name, name='Thickness')
+        row = col.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'LEFT'
+        row.prop(my_props, 'thickness_is_open', text='Thickness', icon='TRIA_DOWN' if my_props.thickness_is_open else 'TRIA_RIGHT', emboss=False)
+        if my_props.thickness_is_open:
+            col.prop(active_lineart, 'thickness', text='Base Thickness')
+            col.separator()
+            print_modifier(modifier='GP_THICK', modifier_name=thickness_modifier_name, name='Thickness')
 
         # color
-        col.separator()
-        col.label(text='Color')
-        # enable color
-        # if my_props.enable_color:
-        #     for area in context.workspace.screens[0].areas:
-        #         for space in area.spaces:
-        #             if space.type == 'VIEW_3D':
-        #                 space.shading.type = 'MATERIAL'
+        row = col.row(align=True)
+        row.use_property_split = False
+        row.alignment = 'LEFT'
+        row.prop(my_props, 'color_is_open', text='Color', icon='TRIA_DOWN' if my_props.color_is_open else 'TRIA_RIGHT', emboss=False)
+        if my_props.color_is_open:
+            # base color
+            col.use_property_split = True
+            #col.prop(active_lineart, 'target_material', text='Base Color Material')
+            if active_lineart.target_material is not None:
+                col.prop(active_lineart.target_material.grease_pencil, 'color', text='Base Color')
+            col.separator()
 
-        # base color
-        col.use_property_split = True
-        #col.prop(active_lineart, 'target_material', text='Base Color Material')
-        if active_lineart.target_material is not None:
-            col.prop(active_lineart.target_material.grease_pencil, 'color', text='Base Color')
-        col.separator()
-
-        # colors
-        tints = get_gp_modifiers(modifier='GP_TINT')
-        for tint in tints:
-            row = col.row(align=True)
-            row.use_property_split = False
-            ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
-            ot.modifier_name = tint.name
-            ot.type = 'DELETE'
-            row.prop(tint, 'color', text='')
-            row.prop(tint, 'factor', slider=True)
-            if is_edit_mode:
+            # colors
+            tints = get_gp_modifiers(modifier='GP_TINT')
+            for tint in tints:
                 row = col.row(align=True)
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                row.use_property_split = False
+                ot = row.operator('dskjal.linearttooleditmodifier', icon='CANCEL', text='')
                 ot.modifier_name = tint.name
-                ot.type = 'ADD'
-                ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
-                ot.modifier_name = tint.name
-                ot.type = 'REMOVE'
-                col.separator(factor=2)
-            row = col.row(align=True)
-            col.separator()
+                ot.type = 'DELETE'
+                row.prop(tint, 'color', text='')
+                row.prop(tint, 'factor', slider=True)
+                if is_edit_mode:
+                    row = col.row(align=True)
+                    ot = row.operator('dskjal.linearttooleditmodifier', text='Assign')
+                    ot.modifier_name = tint.name
+                    ot.type = 'ADD'
+                    ot = row.operator('dskjal.linearttooleditmodifier', text='Remove')
+                    ot.modifier_name = tint.name
+                    ot.type = 'REMOVE'
+                    col.separator(factor=2)
+                row = col.row(align=True)
+                col.separator()
 
-        if is_edit_mode:
-            col.separator()
-            ot = col.operator('dskjal.linearttooladdmodifier', text="Add Color")                
-            ot.modifier_type = 'GP_TINT'
-            ot.modifier_name = tint_modifier_name
+            if is_edit_mode:
+                col.separator()
+                ot = col.operator('dskjal.linearttooladdmodifier', text="Add Color")                
+                ot.modifier_type = 'GP_TINT'
+                ot.modifier_name = tint_modifier_name
 
 
 def gp_object_poll(self, object):
@@ -579,9 +640,13 @@ class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
 
     # ui
     lineart_ui_is_open : bpy.props.BoolProperty(name='lineart_ui_is_open', default=True)
+    layer_is_open : bpy.props.BoolProperty(name='layer_is_open', default=False)
     lineart_option_is_open : bpy.props.BoolProperty(name='lineart_option_is_open', default=True)
     occlusion_is_open : bpy.props.BoolProperty(name='occlusion_is_open', default=False)
     chaining_is_open : bpy.props.BoolProperty(name='chaining_is_open', default=False)
+    opacity_is_open : bpy.props.BoolProperty(name='opacity_is_open', default=True)
+    thickness_is_open : bpy.props.BoolProperty(name='thickness_is_open', default=True)
+    color_is_open : bpy.props.BoolProperty(name='color_is_open', default=True)
 
 classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
@@ -589,6 +654,7 @@ classes = (
     DSKJAL_OT_LINEART_TOOL_FREE_CAMERA,
     DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER,
     DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER,
+    DSKJAL_OT_LINEART_TOOL_LAYER,
     DSKJAL_OT_LINEART_TOOL_SET_LINEART,
     DSKJAL_PT_LINEART_TOOL_UI,
     DSKJAL_LINEART_TOOL_PROPS
