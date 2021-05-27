@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (2, 2),
+    "version" : (2, 3),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -331,7 +331,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         col.label(text='Line Art')
         grease_pencil = None
         line_art_modifier = None
-        col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='GP Object')
+        col.prop_search(my_props, 'gp_object', bpy.data, 'objects', text='Grease Pencil')
         grease_pencil = my_props.gp_object
         if grease_pencil == None:
             return
@@ -410,6 +410,35 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             row = box.row(align=True)
             row.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
             row.prop(active_lineart, 'crease_threshold', text='', slider=True)
+
+            # options
+            box.use_property_split = False
+            box.alignment = 'LEFT'
+            box.prop(my_props, 'lineart_option_is_open', text='Option', icon='TRIA_DOWN' if my_props.lineart_option_is_open else 'TRIA_RIGHT', emboss=False)
+            if my_props.lineart_option_is_open:
+                cbox = box.box()
+                cbox.use_property_split = True
+                cbox.prop(active_lineart, 'use_edge_overlap', text='Overlapping Edge As Contour')
+                cbox.prop(active_lineart, 'use_object_instances')
+                cbox.prop(active_lineart, 'use_clip_plane_boundaries')
+                
+            # occlusion 
+            box.use_property_split = False
+            box.alignment = 'LEFT'
+            box.prop(my_props, 'occlusion_is_open', text='Occlusion', icon='TRIA_DOWN' if my_props.occlusion_is_open else 'TRIA_RIGHT', emboss=False)
+            if my_props.occlusion_is_open:
+                cbox = box.box()
+                cbox.use_property_split = True
+                cbox.prop(active_lineart, 'use_multiple_levels', text='Range')
+                cbox.prop(active_lineart, 'level_start', text='Level')
+                cbox.prop(active_lineart, 'use_transparency')
+                row = cbox.row()
+                row.active = active_lineart.use_transparency
+                for i in range(8):
+                    row.prop(active_lineart, "use_transparency_mask", index=i, toggle=1, text=str(i))
+                ccol = cbox.column()
+                ccol.active = active_lineart.use_transparency
+                ccol.prop(active_lineart, 'use_transparency_match', text='Match All Masks')
 
             # chaining
             box.use_property_split = False
@@ -527,6 +556,8 @@ class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
 
     # ui
     lineart_ui_is_open : bpy.props.BoolProperty(name='lineart_ui_is_open', default=True)
+    lineart_option_is_open : bpy.props.BoolProperty(name='lineart_option_is_open', default=True)
+    occlusion_is_open : bpy.props.BoolProperty(name='occlusion_is_open', default=False)
     chaining_is_open : bpy.props.BoolProperty(name='chaining_is_open', default=False)
 
 classes = (
