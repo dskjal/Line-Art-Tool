@@ -295,6 +295,22 @@ class DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER(bpy.types.Operator):
                     m.target_material = None
                     gp.data.materials.pop(index=gp.data.materials.find(mat.name))
 
+            else:
+                # delete line art vertex_group if other modifier does not refer it
+                vg = m.vertex_group
+                m.vertex_group = ''
+                if vg is not None:
+                    found = False
+                    for mod in gp.grease_pencil_modifiers:
+                        if mod.vertex_group == vg:
+                            found = True
+                            break
+
+                    if not found:
+                        idx = gp.vertex_groups.find(vg)
+                        if idx != -1:
+                            gp.vertex_groups.remove(gp.vertex_groups[idx])
+                
             name = get_active_line_art().name
             gp.grease_pencil_modifiers.remove(m)
             set_active_line_art(gp, name)
