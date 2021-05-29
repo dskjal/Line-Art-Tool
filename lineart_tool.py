@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (3, 1),
+    "version" : (3, 2),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -224,11 +224,12 @@ class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
             bpy.ops.object.camera_add()
             camera = context.scene.camera
 
-        bpy.ops.view3d.view_camera()
+        #bpy.ops.view3d.view_camera()
 
         areas = [area for area in context.screen.areas if area.type == 'VIEW_3D']
         for area in areas:
             if hasattr(area.spaces[0], 'lock_camera'):
+                area.spaces[0].region_3d.view_perspective = 'CAMERA'
                 area.spaces[0].lock_camera = True
 
         context.view_layer.objects.active = old_active
