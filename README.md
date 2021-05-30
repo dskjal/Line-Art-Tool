@@ -1,5 +1,5 @@
 # Line Art Tool
-サイドバーのツールにラインアートのショートカットを追加する。エディットモードで各種の割り当てができる。  
+サイドバーのツールにラインアートのショートカットを追加する。メッシュのエディットモードで各種の割り当てができる。  
 Add line art shortcut in the tool tab in the sidebar. You can assign vertices in edit mode.  
 
 対応バージョンは 2.93。  
