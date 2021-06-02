@@ -73,14 +73,14 @@ def set_active_line_art(gp, line_art_name):
 
     bpy.context.scene.lineart_tool_props.active_lineart_idx = idx
 
-def add_lineart_modifier(gp, layer_name, filter_source):
+def add_lineart_modifier(gp, layer_name, filter_source, source_type='SCENE'):
     # assign new material
     material = bpy.data.materials.new(base_color_name)
     bpy.data.materials.create_gpencil_data(material)
     gp.data.materials.append(material)
 
     la = gp.grease_pencil_modifiers.new(name='Line Art', type='GP_LINEART')
-    la.source_type = 'SCENE'
+    la.source_type = source_type
     la.target_layer = layer_name
     la.target_material = material
     la.source_vertex_group = filter_source
@@ -189,7 +189,7 @@ class DSKJAL_OT_LINEART_TOOL_AUTO_SETUP(bpy.types.Operator):
             
             gp = my_props.gp_object
             data = gp.data
-            la = add_lineart_modifier(gp, data.layers[0].info, get_filter_source())
+            la = add_lineart_modifier(gp, data.layers[0].info, get_filter_source(), source_type='COLLECTION')
 
             # reorder
             # context error work around
