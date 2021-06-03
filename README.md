@@ -19,6 +19,10 @@ Base {Opacity, Thickness, Color} change unassigned elements. Add {Opacity, Thick
 ラインアートはカメラから見る必要がある。Lock はカメラビューに移行し、カメラをビューにロックする。  
 Line art needs to be viewed from a camera. Lock button switches to camera view and lock camera to view.
 
+### ラインオフセット Line Offset
+ラインオフセットはオフセットモディフィアを使い、カメラの視線ベクトルの逆方向に線をずらすことで、線がメッシュに埋まるのを防ぐ。  
+Line Offset prevents burying the lines in mesh, by offsetting the lines in the reverse view vector. That uses an Offset modifier.
+
 ## レイヤー Layer
 レイヤーの電球アイコンは「ライトを使用」オプション。これを OFF にすると線がライトの影響を受けなくなる。  
 A bulb icon in a layer is the "Use Lights" option. Disable line lighting when the option is off.
