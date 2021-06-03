@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (3, 2),
+    "version" : (3, 3),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -39,13 +39,11 @@ opacity_modifier_name = 'lt_opacity'
 thickness_modifier_name = 'lt_thickness'
 tint_modifier_name = 'lt_tint'
 base_color_name = 'lt_base_color'
+line_offset_name = 'lt_line_offset'
 
 def get_filter_source():
-    gp = get_lineart_gpencil(is_create=False)
-    if gp is None:
-        return default_filter_source
     la = get_active_line_art()
-    if la == None:
+    if la is None:
         return default_filter_source
     
     return la.source_vertex_group
@@ -72,6 +70,31 @@ def set_active_line_art(gp, line_art_name):
             idx = 0
 
     bpy.context.scene.lineart_tool_props.active_lineart_idx = idx
+
+def add_line_offset(gp, camera):
+    idx = gp.grease_pencil_modifiers.find(line_offset_name)
+    if idx == -1:
+        ofs = gp.grease_pencil_modifiers.new(name=line_offset_name, type='GP_OFFSET')
+        ofs.driver_remove('location', -1)
+    else:
+        ofs = gp.grease_pencil_modifiers[idx]
+
+    # setup driver
+    for i in range(3):
+        d = ofs.driver_add('location', i)
+        d.driver.type = 'SCRIPTED'
+        var = d.driver.variables.new()
+        var.name = 'offset'
+        var.type = 'SINGLE_PROP'
+        var.targets[0].id_type = 'SCENE'
+        var.targets[0].id = bpy.context.scene
+        var.targets[0].data_path = 'lineart_tool_props.line_offset'
+        var = d.driver.variables.new()
+        var.name = 'var'
+        var.type = 'SINGLE_PROP'
+        var.targets[0].id = camera
+        var.targets[0].data_path = 'matrix_world[2][%d]' % i
+        d.driver.expression = 'var * offset'
 
 def add_lineart_modifier(gp, layer_name, filter_source, source_type='SCENE'):
     # assign new material
@@ -236,6 +259,23 @@ class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
         bpy.ops.object.mode_set(mode=old_mode)
         return {'FINISHED'}
 
+class DSKJAL_OT_LINEART_TOOL_ADD_LINE_OFFSET(bpy.types.Operator):
+    bl_idname = "dskjal.linearttooladdlineoffset"
+    bl_label = "Add Line Offset"
+  
+    def execute(self, context):
+        camera = context.scene.camera
+        if camera is None:
+            return {'FINISHED'}
+
+        gp = get_lineart_gpencil(is_create=False)
+        if gp is None:
+            return {'FINISHED'}
+
+        add_line_offset(gp=gp, camera=camera)
+
+        return {'FINISHED'}
+
 class DSKJAL_OT_LINEART_TOOL_FREE_CAMERA(bpy.types.Operator):
     bl_idname = "dskjal.linearttoolfreecamera"
     bl_label = "Free Camera"
@@ -377,6 +417,11 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         row.operator('dskjal.linearttoolfromactivecameraandlock', text='Lock')
         row.operator('dskjal.linearttoolfreecamera', text='Free')
         col.separator()
+        col.label(text='Line Offset')
+        col.prop(my_props, 'line_offset', text='Line Offset')
+        col.separator()
+        col.operator('dskjal.linearttooladdlineoffset', text='Add Line Offset')
+        col.separator(factor=2)
 
         # Grease Pencil
         col.label(text='Grease Pencil')
@@ -642,6 +687,7 @@ def gp_object_poll(self, object):
 class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
     gp_object : bpy.props.PointerProperty(name='gp_object', description='Grease Pencil Object', type=bpy.types.Object, poll=gp_object_poll)
     active_lineart_idx : bpy.props.IntProperty(name='active_lineart_idx', default=0, min=-1)
+    line_offset : bpy.props.FloatProperty(name='line_offset', default=0.1)
 
     # ui
     lineart_ui_is_open : bpy.props.BoolProperty(name='lineart_ui_is_open', default=True)
@@ -656,6 +702,7 @@ class DSKJAL_LINEART_TOOL_PROPS(bpy.types.PropertyGroup):
 classes = (
     DSKJAL_OT_LINEART_TOOL_AUTO_SETUP,
     DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK,
+    DSKJAL_OT_LINEART_TOOL_ADD_LINE_OFFSET,
     DSKJAL_OT_LINEART_TOOL_FREE_CAMERA,
     DSKJAL_OT_LINEART_TOOL_EDIT_MODIFIER,
     DSKJAL_OT_LINEART_TOOL_ADD_MODIFIER,
