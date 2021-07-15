@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (3, 3),
+    "version" : (3, 4),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -487,10 +487,12 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             row = box.row(align=True)
             row.use_property_split = False
             row.prop(active_lineart, 'use_contour', text='Contour', toggle=1)
-            row.prop(active_lineart, 'use_material', text='Material Boundaries', toggle=1)
+            if hasattr(active_lineart, 'use_loose'):
+                row.prop(active_lineart, 'use_loose', text='Loose', toggle=1)
             row = box.row(align=True)
             row.use_property_split = False
 
+            row.prop(active_lineart, 'use_material', text='Material Boundaries', toggle=1)
             row.prop(active_lineart, 'use_intersection', text='Intersections', toggle=1)
             if is_edit_mode:
                 box.separator()
@@ -507,15 +509,21 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
             if is_edit_mode:
                 box.separator()
             box.use_property_split = False
+
             row = box.row(align=True)
             row.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
             row.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
-            # options
+            row = box.row(align=True)
+            row.use_property_split = False
+            if hasattr(active_lineart, 'use_overlap_edge_type_support'):
+                row.prop(active_lineart, 'use_overlap_edge_type_support', text='Allow Overlap', toggle=1)
+
+            # Geometry Processing (options)
             row = box.row()
             row.use_property_split = False
             row.alignment = 'LEFT'
-            row.prop(my_props, 'lineart_option_is_open', text='Option', icon='TRIA_DOWN' if my_props.lineart_option_is_open else 'TRIA_RIGHT', emboss=False)
+            row.prop(my_props, 'lineart_option_is_open', text='Geometry Processing', icon='TRIA_DOWN' if my_props.lineart_option_is_open else 'TRIA_RIGHT', emboss=False)
             if my_props.lineart_option_is_open:
                 cbox = box.box()
                 cbox.use_property_split = True
