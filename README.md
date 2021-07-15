@@ -2,8 +2,8 @@
 サイドバーのツールにラインアートのショートカットを追加する。メッシュのエディットモードで各種の割り当てができる。  
 Add line art shortcut in the tool tab in the sidebar. You can assign vertices in edit mode.  
 
-対応バージョンは 2.93。  
-Blender 2.93 is required.
+対応バージョンは 2.93 以降。  
+Blender 2.93 or later is required.
 
 # 使い方 How to use
 Add Line Art Grease Pencil でラインアートを自動設定した後、不透明度や幅を割り当てる。  
