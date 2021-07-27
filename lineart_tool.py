@@ -22,7 +22,7 @@ from bpy.props import *
 bl_info = {
     "name" : "Line Art Tool",
     "author" : "dskjal",
-    "version" : (3, 4),
+    "version" : (3, 5),
     "blender" : (2, 93, 0),
     "location" : "View3D > Sidebar > Tool > Line Art Tool",
     "description" : "",
@@ -556,14 +556,25 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 cbox.use_property_split = True
                 cbox.prop(active_lineart, 'use_multiple_levels', text='Range')
                 cbox.prop(active_lineart, 'level_start', text='Level')
-                cbox.prop(active_lineart, 'use_transparency')
-                row = cbox.row()
-                row.active = active_lineart.use_transparency
-                for i in range(8):
-                    row.prop(active_lineart, "use_transparency_mask", index=i, toggle=1, text=str(i))
-                ccol = cbox.column()
-                ccol.active = active_lineart.use_transparency
-                ccol.prop(active_lineart, 'use_transparency_match', text='Match All Masks')
+
+                if (3, 0, 0) >= bpy.app.version: 
+                    cbox.prop(active_lineart, 'use_material_mask')
+                    row = cbox.row()
+                    row.active = active_lineart.use_material_mask
+                    for i in range(8):
+                        row.prop(active_lineart, "use_material_mask_bits", index=i, toggle=1, text=str(i))
+                    ccol = cbox.column()
+                    ccol.active = active_lineart.use_material_mask
+                    ccol.prop(active_lineart, 'use_material_mask_match', text='Match All Masks')
+                else:
+                    cbox.prop(active_lineart, 'use_transparency')
+                    row = cbox.row()
+                    row.active = active_lineart.use_transparency
+                    for i in range(8):
+                        row.prop(active_lineart, "use_transparency_mask", index=i, toggle=1, text=str(i))
+                    ccol = cbox.column()
+                    ccol.active = active_lineart.use_transparency
+                    ccol.prop(active_lineart, 'use_transparency_match', text='Match All Masks')
 
             # chaining
             row = box.row()
