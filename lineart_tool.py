@@ -473,7 +473,7 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
         row.alignment = 'LEFT'
         row.prop(my_props, 'lineart_ui_is_open', text='Line Art Settings', icon='TRIA_DOWN' if my_props.lineart_ui_is_open else 'TRIA_RIGHT', emboss=False)
         if my_props.lineart_ui_is_open:
-            box = col.box()
+            box = col #col.box()
             box.prop(active_lineart, 'source_type')
             if active_lineart.source_type == 'COLLECTION':
                 box.prop(active_lineart, 'source_collection')
@@ -506,17 +506,32 @@ class DSKJAL_PT_LINEART_TOOL_UI(bpy.types.Panel):
                 ot = row.operator('mesh.mark_freestyle_edge', text='Clear')
                 ot.clear = True
 
-            if is_edit_mode:
-                box.separator()
+            box.separator()
             box.use_property_split = False
 
             row = box.row(align=True)
             row.prop(active_lineart, 'use_crease', text='Crease', toggle=1)
             row.prop(active_lineart, 'crease_threshold', text='', slider=True)
 
-            row = box.row(align=True)
-            row.use_property_split = False
+            if hasattr(active_lineart, 'use_face_mark'):
+                box.separator()
+                row = box.row(align=True)
+                row.use_property_split = False
+                row.prop(active_lineart, 'use_face_mark', text='Face Mark Filtering', toggle=1)
+                tr = box.row(align=True)
+                tr.active = active_lineart.use_face_mark
+                tr.prop(active_lineart, 'use_face_mark_invert', text='Invert', toggle=1)
+                tr.prop(active_lineart, 'use_face_mark_boundaries', text='Boundaries', toggle=1)
+                if is_edit_mode:
+                    row = box.row(align=True)
+                    row.use_property_split = False
+                    ot = row.operator('mesh.mark_freestyle_face', text="Mark")
+                    ot = row.operator('mesh.mark_freestyle_face', text='Clear')
+                    ot.clear = True
             if hasattr(active_lineart, 'use_overlap_edge_type_support'):
+                box.separator()
+                row = box.row(align=True)
+                row.use_property_split = False
                 row.prop(active_lineart, 'use_overlap_edge_type_support', text='Allow Overlap', toggle=1)
 
             # Geometry Processing (options)
