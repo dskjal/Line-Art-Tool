@@ -21,6 +21,9 @@ Line Offset prevents burying the lines in mesh, by offsetting the lines in the r
 ## Layer
 A bulb icon in a layer is the "Use Lights" option. Disable line lighting when the option is off.
 
+## Line Thickness
+Setting Stroke Thickness to Screen Space allows you to fix the line width.
+
 # Color is not working
 Switch viewport shading to material preview or render.
 
@@ -47,6 +50,9 @@ Base {Opacity, Thickness, Color} は未割り当ての要素を変更する。Ad
 
 ## レイヤー 
 レイヤーの電球アイコンは「ライトを使用」オプション。これを OFF にすると線がライトの影響を受けなくなる。  
+
+## 線の幅
+ストローク幅をスクリーン空間にすると、線幅を固定できる。
 
 # 色がつかない場合 
 ３Ｄビューのシェーディングをマテリアルプレビューかレンダーにする。  
