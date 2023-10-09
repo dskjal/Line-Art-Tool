@@ -1,5 +1,7 @@
 [日本語](#日本語)
 
+[For Version 3.6](https://github.com/dskjal/Line-Art-Tool/blob/main/lineart_tool360.py)
+
 # Line Art Tool
 Add line art shortcut in the tool tab in the sidebar. You can assign vertices in edit mode.  
 
