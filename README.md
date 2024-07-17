@@ -1,5 +1,7 @@
 [日本語](#日本語)
 
+[For 4.2](https://github.com/dskjal/Line-Art-Tool/releases/tag/release)
+
 [For Version 3.6](https://github.com/dskjal/Line-Art-Tool/blob/main/lineart_tool360.py)
 
 # Line Art Tool
