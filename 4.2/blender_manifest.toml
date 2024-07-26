@@ -1,0 +1,15 @@
+schema_version = "1.0.0"
+
+id = "lineart_tool"
+version = "1.0.1"
+name = "Lineart Tool"
+tagline = "ラインアートの補助"
+maintainer = "dskjal <email@address.com>"
+type = "add-on"
+website = "https://github.com/dskjal/Line-Art-Tool"
+tags = ["Grease Pencil"]
+blender_version_min = "4.2.0"
+
+license = [
+  "SPDX:GPL-2.0-or-later",
+]
