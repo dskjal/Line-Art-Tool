@@ -208,13 +208,8 @@ class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
             bpy.ops.object.camera_add()
             camera = context.scene.camera
 
-        #bpy.ops.view3d.view_camera()
-
-        areas = [area for area in context.screen.areas if area.type == 'VIEW_3D']
-        for area in areas:
-            if getattr(area.spaces[0], 'lock_camera', False):
-                area.spaces[0].region_3d.view_perspective = 'CAMERA'
-                area.spaces[0].lock_camera = True
+        bpy.ops.view3d.view_camera()
+        bpy.context.space_data.lock_camera = True
 
         context.view_layer.objects.active = old_active
         bpy.ops.object.mode_set(mode=old_mode)
