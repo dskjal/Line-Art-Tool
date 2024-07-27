@@ -192,6 +192,11 @@ class DSKJAL_OT_LINEART_TOOL_AUTO_SETUP(bpy.types.Operator):
 
         return {'FINISHED'}
 
+def is_view_from_camera():
+    for area in bpy.context.screen.areas:
+        if area.type == 'VIEW_3D':
+            return area.spaces[0].region_3d.view_perspective == 'CAMERA'
+
 class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
     bl_idname = "dskjal.linearttoolfromactivecameraandlock"
     bl_label = "From Active Camera And Lock"
@@ -208,8 +213,9 @@ class DSKJAL_OT_LINEART_TOOL_FROM_ACTIVE_CAMERA_AND_LOCK(bpy.types.Operator):
             bpy.ops.object.camera_add()
             camera = context.scene.camera
 
-        bpy.ops.view3d.view_camera()
-        bpy.context.space_data.lock_camera = True
+        if not is_view_from_camera():
+            bpy.ops.view3d.view_camera()
+            bpy.context.space_data.lock_camera = True
 
         context.view_layer.objects.active = old_active
         bpy.ops.object.mode_set(mode=old_mode)
@@ -223,11 +229,10 @@ class DSKJAL_OT_LINEART_TOOL_FREE_CAMERA(bpy.types.Operator):
         camera = context.scene.camera
         if camera is None:
             return {'FINISHED'}
-
-        areas = [area for area in context.screen.areas if area.type == 'VIEW_3D']
-        for area in areas:
-            if getattr(area.spaces[0], 'lock_camera', False):
-                area.spaces[0].lock_camera = False
+        
+        if is_view_from_camera():
+            bpy.ops.view3d.view_camera()
+            bpy.context.space_data.lock_camera = False
 
         return {'FINISHED'}
 
